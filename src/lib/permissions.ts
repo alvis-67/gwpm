@@ -1,4 +1,5 @@
 import { canManageProjects, isAdmin, isOwner, type SessionUser } from "./auth";
+import { splitProjectNotes } from "./project-docs";
 import type { AppData, Project, ProjectTrade, User } from "./types";
 
 export function orgUsers(data: AppData, orgId: string): User[] {
@@ -23,6 +24,9 @@ export function visibleProjects(data: AppData, user: SessionUser) {
       .filter((t) => t.assigneeUserId === user.id)
       .map((t) => t.projectId),
   );
+  for (const project of inOrg) {
+    if (splitProjectNotes(project.notes).leadUserId === user.id) ids.add(project.id);
+  }
   return inOrg.filter((p) => ids.has(p.id));
 }
 
@@ -100,6 +104,17 @@ export function canReportProcurement(
 
 export function orgTradeLeads(data: AppData, orgId: string): User[] {
   return orgUsers(data, orgId).filter((u) => u.roleDefault === "trade_lead");
+}
+
+/** Trade leads in the company, plus its 工程公司老闆, who can also be the project 負責人. */
+export function projectLeadCandidates(data: AppData, orgId: string): User[] {
+  const users = orgUsers(data, orgId).filter(
+    (user) => user.roleDefault === "owner" || user.roleDefault === "trade_lead",
+  );
+  return users.sort((a, b) => {
+    if (a.roleDefault !== b.roleDefault) return a.roleDefault === "owner" ? -1 : 1;
+    return a.name.localeCompare(b.name, "zh-Hant");
+  });
 }
 
 export function getOrganization(data: AppData, orgId: string) {

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addTradeAction, deleteProjectAction } from "@/actions/projects";
+import { addProjectCommentAction, addTradeAction, deleteProjectAction } from "@/actions/projects";
 import { ConfirmTwiceButton } from "@/components/ConfirmTwiceButton";
 import { DependencyBanner } from "@/components/DependencyBanner";
 import { ProgressItem } from "@/components/ProgressItem";
@@ -144,6 +144,38 @@ export default async function ProjectOverviewPage({
             <SubmitButton label="新增工種" className="btn btn-primary" />
           </form>
         </>
+      )}
+
+      <h2 className="section-title">留言</h2>
+      {docs.comments.length === 0 ? (
+        <p className="empty">尚無留言</p>
+      ) : (
+        <div className="mb-4">
+          {docs.comments.map((comment) => {
+            const author = data.users.find((item) => item.id === comment.authorUserId);
+            return (
+              <div key={comment.id} className="timeline-item">
+                <div className="flex justify-between gap-2 text-sm secondary">
+                  <strong style={{ color: "var(--color-ink)" }}>{author?.name || "負責人"}</strong>
+                  <span className="font-mono">{formatDateTimeZh(comment.createdAt)}</span>
+                </div>
+                <p className="mt-2 mb-0 whitespace-pre-wrap">{comment.body}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {docs.leadUserId === user.id ? (
+        <form action={addProjectCommentAction} className="mb-6">
+          <input type="hidden" name="projectId" value={id} />
+          <div className="field">
+            <label htmlFor="commentBody">留言（必填）</label>
+            <textarea id="commentBody" name="body" required placeholder="輸入留言…" />
+          </div>
+          <SubmitButton label="送出" className="btn btn-primary" />
+        </form>
+      ) : (
+        <p className="muted text-sm mb-6">只有此工程的負責人可以留言。</p>
       )}
 
       <div className="link-row">

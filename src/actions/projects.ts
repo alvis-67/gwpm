@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
+import { canManageProjects, isAdmin, isOwner, requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
-import { managedProject } from "@/lib/permissions";
+import { managedProject, projectLeadCandidates } from "@/lib/permissions";
 import { updateData } from "@/lib/store";
 import { joinProjectNotes, splitProjectNotes } from "@/lib/project-docs";
 import { DEFAULT_TRADE_TEMPLATES, type ProjectStatus } from "@/lib/types";
@@ -134,7 +134,10 @@ export async function updateProjectAction(formData: FormData) {
     p.plannedStart = plannedStart;
     p.plannedEnd = plannedEnd;
     const kept = splitProjectNotes(p.notes);
-    p.notes = joinProjectNotes(notes, kept.quotationNumber, kept.invoiceNumber);
+    p.notes = joinProjectNotes(notes, kept.quotationNumber, kept.invoiceNumber, {
+      leadUserId: kept.leadUserId,
+      comments: kept.comments,
+    });
     p.status = status;
     p.updatedAt = new Date().toISOString();
   });
@@ -344,4 +347,61 @@ export async function deleteDependencyAction(formData: FormData) {
     data.dependencies = data.dependencies.filter((d) => d.id !== id);
   });
   revalidatePath(`/projects/${projectId}/dependencies`);
+}
+
+export async function setProjectLeadAction(formData: FormData) {
+  const user = await requireSession();
+  if (!isOwner(user)) throw new Error("無權限");
+  const projectId = String(formData.get("projectId") || "");
+  const leadUserId = String(formData.get("leadUserId") || "").trim();
+
+  await updateData((data) => {
+    const project = data.projects.find((item) => item.id === projectId && item.orgId === user.orgId);
+    if (!project) throw new Error("找不到工程案");
+    if (
+      leadUserId &&
+      !projectLeadCandidates(data, project.orgId).some((candidate) => candidate.id === leadUserId)
+    ) {
+      throw new Error("負責人必須屬於本公司");
+    }
+    const kept = splitProjectNotes(project.notes);
+    project.notes = joinProjectNotes(kept.text, kept.quotationNumber, kept.invoiceNumber, {
+      leadUserId,
+      comments: kept.comments,
+    });
+    project.updatedAt = new Date().toISOString();
+  });
+
+  revalidatePath("/me");
+  revalidatePath("/projects");
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function addProjectCommentAction(formData: FormData) {
+  const user = await requireSession();
+  const projectId = String(formData.get("projectId") || "");
+  const body = String(formData.get("body") || "").trim();
+  if (!body) throw new Error("請輸入留言（必填）");
+
+  await updateData((data) => {
+    const project = data.projects.find((item) => item.id === projectId);
+    if (!project) throw new Error("找不到工程案");
+    const kept = splitProjectNotes(project.notes);
+    if (kept.leadUserId !== user.id) throw new Error("只有負責人可以留言");
+    project.notes = joinProjectNotes(kept.text, kept.quotationNumber, kept.invoiceNumber, {
+      leadUserId: kept.leadUserId,
+      comments: [
+        ...kept.comments,
+        {
+          id: createId("pcmt"),
+          authorUserId: user.id,
+          body,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    });
+    project.updatedAt = new Date().toISOString();
+  });
+
+  revalidatePath(`/projects/${projectId}`);
 }

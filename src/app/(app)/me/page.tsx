@@ -1,18 +1,29 @@
 import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
 import { changePasswordAction, updateProfileAction } from "@/actions/profile";
+import { ProjectLeadForm } from "@/components/ProjectLeadForm";
 import { SubmitButton } from "@/components/SubmitButton";
-import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
+import { canManageProjects, isAdmin, isOwner, requireSession } from "@/lib/auth";
+import { formatLeadLabel } from "@/lib/format";
 import { PRODUCT_FULL, PRODUCT_NAME, roleLabel } from "@/lib/labels";
-import { getOrganization } from "@/lib/permissions";
+import { getOrganization, orgProjects, projectLeadCandidates } from "@/lib/permissions";
+import { splitProjectNotes } from "@/lib/project-docs";
 import { persistenceLabel, readData } from "@/lib/store";
 
 export default async function MePage() {
   const user = await requireSession();
   const admin = isAdmin(user);
+  const owner = isOwner(user);
   const manager = canManageProjects(user);
   const data = await readData();
   const org = getOrganization(data, user.orgId);
+  const relatedProjects = owner ? orgProjects(data, user.orgId) : [];
+  const leadChoices = owner
+    ? projectLeadCandidates(data, user.orgId).map((candidate) => ({
+        id: candidate.id,
+        label: `${formatLeadLabel(candidate)}（${candidate.phoneE164 || "無電話"}）`,
+      }))
+    : [];
   const storeMode = persistenceLabel();
 
   return (
@@ -69,6 +80,28 @@ export default async function MePage() {
               </Link>
             )}
           </div>
+        </>
+      )}
+
+      {owner && (
+        <>
+          <h2 className="section-title">工程負責人</h2>
+          <p className="secondary text-sm mb-3">
+            為相關工程指定負責人。工程公司老闆也可以擔任負責人。
+          </p>
+          {relatedProjects.length === 0 ? (
+            <p className="empty">尚無相關工程</p>
+          ) : (
+            relatedProjects.map((project) => (
+              <ProjectLeadForm
+                key={project.id}
+                projectId={project.id}
+                projectName={project.name}
+                leadUserId={splitProjectNotes(project.notes).leadUserId}
+                leads={leadChoices}
+              />
+            ))
+          )}
         </>
       )}
 
