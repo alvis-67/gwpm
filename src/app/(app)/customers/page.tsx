@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/auth";
 import { customerPath, splitProjectNotes } from "@/lib/project-docs";
-import { visibleProjects } from "@/lib/permissions";
+import { visibleCustomerProjects } from "@/lib/permissions";
 import { readData } from "@/lib/store";
 
 export default async function CustomersPage() {
   const user = await requireSession();
   const data = await readData();
-  const projects = visibleProjects(data, user);
+  const projects = visibleCustomerProjects(data, user);
   const counts = new Map<string, number>();
   for (const project of projects) {
     const name = project.clientDisplayName.trim();

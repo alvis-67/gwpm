@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/auth";
 import { customerNameFromPath, customerPath, splitProjectNotes } from "@/lib/project-docs";
-import { visibleProjects } from "@/lib/permissions";
+import { visibleCustomerProjects } from "@/lib/permissions";
 import { readData } from "@/lib/store";
 
 interface DocRow {
@@ -25,7 +25,7 @@ export default async function CustomerDetailPage({
   const customerName = customerNameFromPath(rawName);
   const user = await requireSession();
   const data = await readData();
-  const projects = visibleProjects(data, user).filter(
+  const projects = visibleCustomerProjects(data, user).filter(
     (project) => project.clientDisplayName.trim() === customerName,
   );
   if (projects.length === 0) notFound();

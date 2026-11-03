@@ -66,7 +66,7 @@ export default async function ProjectOverviewPage({
           <div className="list-row-meta mt-2">
             <ProjectStatusChip status={project.status} />
             <span>工作地點：{project.location || "未填"}</span>
-            {project.clientDisplayName ? (
+            {leader && project.clientDisplayName ? (
               <Link href={customerPath(project.clientDisplayName)}>
                 {project.clientDisplayName}
               </Link>

@@ -1,4 +1,4 @@
-import { isAdmin, isOwner, type SessionUser } from "./auth";
+import { isAdmin, type SessionUser } from "./auth";
 import { joinProjectNotes, splitProjectNotes } from "./project-docs";
 import type { AppData, Project, ProjectTrade, User } from "./types";
 
@@ -38,16 +38,19 @@ export function canLeadProject(
 export function visibleProjects(data: AppData, user: SessionUser) {
   if (isAdmin(user)) return data.projects;
   const ids = new Set<string>();
-  if (isOwner(user)) {
-    for (const project of orgProjects(data, user.orgId)) ids.add(project.id);
+  for (const project of data.projects) {
+    if (isProjectLeader(user, project)) ids.add(project.id);
   }
   for (const trade of data.trades) {
     if (trade.assigneeUserId === user.id) ids.add(trade.projectId);
   }
-  for (const project of data.projects) {
-    if (isProjectLeader(user, project)) ids.add(project.id);
-  }
   return data.projects.filter((project) => ids.has(project.id));
+}
+
+/** The Leader sees the customer. A trade assignee does not. */
+export function visibleCustomerProjects(data: AppData, user: SessionUser) {
+  if (isAdmin(user)) return data.projects;
+  return data.projects.filter((project) => isProjectLeader(user, project));
 }
 
 export function canAccessProject(
@@ -68,8 +71,7 @@ export function canAccessTrade(
   const project = data.projects.find((item) => item.id === trade.projectId);
   if (!project) return false;
   if (canLeadProject(data, user, project.id)) return true;
-  if (trade.assigneeUserId === user.id) return true;
-  return isOwner(user) && project.orgId === user.orgId;
+  return trade.assigneeUserId === user.id;
 }
 
 /** Level-2 (this project's Leader or admin) or the one 負責人 of this trade. */

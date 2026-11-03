@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { canManageProjects, isAdmin, isOwner, requireSession } from "@/lib/auth";
 import { formatLeadLabel } from "@/lib/format";
 import { PRODUCT_FULL, PRODUCT_NAME, roleLabel } from "@/lib/labels";
-import { assignableUsers, getOrganization, orgProjects } from "@/lib/permissions";
+import { assignableUsers, getOrganization, isProjectLeader, orgProjects } from "@/lib/permissions";
 import { splitProjectNotes } from "@/lib/project-docs";
 import { persistenceLabel, readData } from "@/lib/store";
 
@@ -17,7 +17,9 @@ export default async function MePage() {
   const manager = canManageProjects(user);
   const data = await readData();
   const org = getOrganization(data, user.orgId);
-  const relatedProjects = owner ? orgProjects(data, user.orgId) : [];
+  const relatedProjects = owner
+    ? orgProjects(data, user.orgId).filter((project) => isProjectLeader(user, project))
+    : [];
   const leadChoices = owner
     ? assignableUsers(data).map((candidate) => ({
         id: candidate.id,
