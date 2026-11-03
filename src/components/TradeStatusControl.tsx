@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { StatusSheet } from "@/components/StatusSheet";
 import { TradeStatusChip } from "@/components/StatusChip";
 import { updateTradeStatusAction } from "@/actions/trades";
@@ -18,7 +17,6 @@ export function TradeStatusControl({
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const router = useRouter();
 
   return (
     <>
@@ -43,7 +41,6 @@ export function TradeStatusControl({
           setOpen(false);
           startTransition(async () => {
             await updateTradeStatusAction(tradeId, next);
-            router.refresh();
           });
         }}
       />

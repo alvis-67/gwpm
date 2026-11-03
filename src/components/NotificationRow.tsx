@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { markNotificationReadAction } from "@/actions/notifications";
 import { formatDateTimeZh } from "@/lib/dates";
@@ -21,7 +20,6 @@ export function NotificationRow({
   createdAt: string;
   readAt: string | null;
 }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   return (
@@ -32,7 +30,6 @@ export function NotificationRow({
         if (!readAt) {
           startTransition(async () => {
             await markNotificationReadAction(id);
-            router.refresh();
           });
         }
       }}

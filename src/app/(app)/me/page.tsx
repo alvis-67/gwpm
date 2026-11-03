@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
 import { changePasswordAction, updateProfileAction } from "@/actions/profile";
+import { SubmitButton } from "@/components/SubmitButton";
 import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 import { PRODUCT_FULL, PRODUCT_NAME, roleLabel } from "@/lib/labels";
 import { getOrganization } from "@/lib/permissions";
@@ -88,9 +89,7 @@ export default async function MePage() {
           />
           <p className="muted text-xs">格式例：+85291234567（含國碼，勿省略 +）</p>
         </div>
-        <button type="submit" className="btn btn-primary">
-          儲存
-        </button>
+        <SubmitButton label="儲存" className="btn btn-primary" />
       </form>
 
       <h2 className="section-title">變更密碼</h2>
@@ -103,9 +102,7 @@ export default async function MePage() {
           <label htmlFor="confirm">再輸入一次</label>
           <input id="confirm" name="confirm" type="password" required minLength={6} autoComplete="new-password" />
         </div>
-        <button type="submit" className="btn btn-secondary">
-          更新密碼
-        </button>
+        <SubmitButton label="更新密碼" className="btn btn-secondary" />
       </form>
 
       <h2 className="section-title">PWA／加入主畫面</h2>
@@ -118,9 +115,7 @@ export default async function MePage() {
       <p className="text-sm muted mb-4">資料層：{storeMode}</p>
 
       <form action={logoutAction}>
-        <button type="submit" className="btn btn-secondary">
-          登出
-        </button>
+        <SubmitButton label="登出" className="btn btn-secondary" />
       </form>
     </div>
   );

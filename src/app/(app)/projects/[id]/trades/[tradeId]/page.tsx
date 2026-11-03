@@ -7,6 +7,7 @@ import {
   updateTradeScheduleAction,
 } from "@/actions/projects";
 import { ConfirmTwiceButton } from "@/components/ConfirmTwiceButton";
+import { SubmitButton } from "@/components/SubmitButton";
 import { DependencyBanner } from "@/components/DependencyBanner";
 import { TradeStatusControl } from "@/components/TradeStatusControl";
 import { ProcurementStatusChip } from "@/components/StatusChip";
@@ -85,9 +86,7 @@ export default async function TradeDetailPage({
               <label htmlFor="name">名稱（可自訂，不限預設範本）</label>
               <input id="name" name="name" required defaultValue={trade.name} />
             </div>
-            <button type="submit" className="btn btn-secondary">
-              重新命名
-            </button>
+            <SubmitButton label="重新命名" className="btn btn-secondary" />
           </form>
         </>
       )}
@@ -132,9 +131,7 @@ export default async function TradeDetailPage({
                 ))}
               </select>
             </div>
-            <button type="submit" className="btn btn-secondary">
-              儲存指派
-            </button>
+            <SubmitButton label="儲存指派" className="btn btn-secondary" />
           </form>
 
           <h2 className="section-title">編輯排程</h2>
@@ -164,9 +161,7 @@ export default async function TradeDetailPage({
               <label htmlFor="notes">備註</label>
               <textarea id="notes" name="notes" defaultValue={trade.notes} />
             </div>
-            <button type="submit" className="btn btn-primary">
-              儲存排程
-            </button>
+            <SubmitButton label="儲存排程" className="btn btn-primary" />
           </form>
         </>
       )}

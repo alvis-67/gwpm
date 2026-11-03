@@ -1,5 +1,7 @@
 "use client";
 
+import { SubmitButton } from "@/components/SubmitButton";
+
 export function ConfirmTwiceButton({
   action,
   fields,
@@ -29,9 +31,7 @@ export function ConfirmTwiceButton({
       {Object.entries(fields).map(([name, value]) => (
         <input key={name} type="hidden" name={name} value={value} />
       ))}
-      <button type="submit" className={className}>
-        {label}
-      </button>
+      <SubmitButton label={label} className={className} />
     </form>
   );
 }

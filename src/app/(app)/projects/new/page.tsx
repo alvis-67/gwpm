@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createProjectAction } from "@/actions/projects";
+import { SubmitButton } from "@/components/SubmitButton";
 import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 import { readData } from "@/lib/store";
 
@@ -61,9 +62,7 @@ export default async function NewProjectPage() {
         <p className="muted text-xs mb-6">
           可不勾選；之後於工程案內自行新增任意工種名稱。
         </p>
-        <button type="submit" className="btn btn-primary btn-block md:max-w-xs">
-          建立
-        </button>
+        <SubmitButton label="建立" className="btn btn-primary btn-block md:max-w-xs" />
       </form>
     </div>
   );

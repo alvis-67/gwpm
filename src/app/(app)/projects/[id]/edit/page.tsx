@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { updateProjectAction } from "@/actions/projects";
+import { SubmitButton } from "@/components/SubmitButton";
 import { canManageProjects, requireSession } from "@/lib/auth";
 import { projectStatusLabel } from "@/lib/labels";
 import { canAccessProject } from "@/lib/permissions";
@@ -81,9 +82,7 @@ export default async function EditProjectPage({
           <label htmlFor="notes">備註</label>
           <textarea id="notes" name="notes" defaultValue={docs.text} />
         </div>
-        <button type="submit" className="btn btn-primary btn-block md:max-w-xs">
-          儲存
-        </button>
+        <SubmitButton label="儲存" className="btn btn-primary btn-block md:max-w-xs" />
       </form>
     </div>
   );

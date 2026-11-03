@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PrintButton } from "@/components/PrintButton";
+import { SubmitButton } from "@/components/SubmitButton";
 import { TradeStatusChip } from "@/components/StatusChip";
 import { canManageProjects, requireSession } from "@/lib/auth";
 import { formatDateTimeZh, formatDateZh } from "@/lib/dates";
@@ -70,9 +71,7 @@ export default async function ReportPage({
               <option value="0">不含相片</option>
             </select>
           </div>
-          <button type="submit" className="btn btn-primary">
-            預覽報告
-          </button>
+          <SubmitButton label="預覽報告" className="btn btn-primary" />
         </form>
       ) : (
         <div>

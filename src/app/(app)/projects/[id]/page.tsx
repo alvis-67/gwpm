@@ -4,6 +4,7 @@ import { addTradeAction, deleteProjectAction } from "@/actions/projects";
 import { ConfirmTwiceButton } from "@/components/ConfirmTwiceButton";
 import { DependencyBanner } from "@/components/DependencyBanner";
 import { ProgressItem } from "@/components/ProgressItem";
+import { SubmitButton } from "@/components/SubmitButton";
 import { TradeNameField } from "@/components/TradeNameField";
 import { TradeStatusChip, ProjectStatusChip } from "@/components/StatusChip";
 import { canManageProjects, requireSession } from "@/lib/auth";
@@ -140,9 +141,7 @@ export default async function ProjectOverviewPage({
           <form action={addTradeAction} className="mb-2">
             <input type="hidden" name="projectId" value={id} />
             <TradeNameField options={tradeOptions} />
-            <button type="submit" className="btn btn-primary">
-              新增工種
-            </button>
+            <SubmitButton label="新增工種" className="btn btn-primary" />
           </form>
         </>
       )}

@@ -29,6 +29,7 @@ export function ProgressItem({
   const dragged = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const [dx, setDx] = useState(0);
+  const [pending, setPending] = useState(false);
 
   function setOffset(next: number) {
     dxRef.current = next;
@@ -45,11 +46,21 @@ export function ProgressItem({
       setOffset(0);
       return;
     }
+    setPending(true);
     formRef.current?.requestSubmit();
   }
 
   return (
-    <div className="list-row" style={{ position: "relative", overflow: "hidden", touchAction: "pan-y" }}>
+    <div
+      className="list-row"
+      aria-busy={pending}
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        touchAction: "pan-y",
+        pointerEvents: pending ? "none" : undefined,
+      }}
+    >
       <form ref={formRef} action={deleteTradeAction} hidden>
         <input type="hidden" name="tradeId" value={tradeId} />
       </form>
@@ -59,7 +70,7 @@ export function ProgressItem({
           className="text-sm"
           style={{ position: "absolute", right: 16, color: "var(--color-danger)" }}
         >
-          鬆開以移除
+          {pending ? "處理中…" : "鬆開以移除"}
         </span>
       )}
       <div

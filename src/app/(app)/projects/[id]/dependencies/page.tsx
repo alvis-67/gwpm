@@ -4,6 +4,7 @@ import {
   addDependencyAction,
   deleteDependencyAction,
 } from "@/actions/projects";
+import { SubmitButton } from "@/components/SubmitButton";
 import { canManageProjects, requireSession } from "@/lib/auth";
 import { tradeStatusLabel } from "@/lib/labels";
 import { canAccessProject } from "@/lib/permissions";
@@ -53,9 +54,7 @@ export default async function DependenciesPage({
               <form action={deleteDependencyAction}>
                 <input type="hidden" name="id" value={d.id} />
                 <input type="hidden" name="projectId" value={id} />
-                <button type="submit" className="btn btn-tertiary">
-                  刪除
-                </button>
+                <SubmitButton label="刪除" className="btn btn-tertiary" />
               </form>
             </div>
           );
@@ -95,9 +94,7 @@ export default async function DependenciesPage({
             ))}
           </select>
         </div>
-        <button type="submit" className="btn btn-primary">
-          新增
-        </button>
+        <SubmitButton label="新增" className="btn btn-primary" />
       </form>
     </div>
   );

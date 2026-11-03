@@ -1,5 +1,6 @@
 import { markAllNotificationsReadAction } from "@/actions/notifications";
 import { NotificationRow } from "@/components/NotificationRow";
+import { SubmitButton } from "@/components/SubmitButton";
 import { requireSession } from "@/lib/auth";
 import { readData } from "@/lib/store";
 
@@ -15,9 +16,7 @@ export default async function NotificationsPage() {
       <header className="page-header">
         <h1 className="page-title">通知</h1>
         <form action={markAllNotificationsReadAction}>
-          <button type="submit" className="btn btn-tertiary">
-            全部標為已讀
-          </button>
+          <SubmitButton label="全部標為已讀" className="btn btn-tertiary" />
         </form>
       </header>
 

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
@@ -19,6 +20,18 @@ function readTradeName(formData: FormData): string {
 
 function readProjectNotes(formData: FormData): string {
   return String(formData.get("notes") || "").replace(/\s+$/, "");
+}
+
+/** Same-page redirect reloads the document. Stay put when the user is already there. */
+async function redirectUnlessHere(path: string) {
+  const referer = (await headers()).get("referer") || "";
+  let pathname = "";
+  try {
+    pathname = new URL(referer).pathname;
+  } catch {
+    pathname = "";
+  }
+  if (pathname !== path) redirect(path);
 }
 
 export async function createProjectAction(formData: FormData) {
@@ -209,7 +222,7 @@ export async function deleteTradeAction(formData: FormData) {
     data.comments = data.comments.filter((c) => c.projectTradeId !== tradeId);
   });
   revalidatePath(`/projects/${projectId}`);
-  redirect(`/projects/${projectId}`);
+  await redirectUnlessHere(`/projects/${projectId}`);
 }
 
 export async function assignTradeAction(formData: FormData) {

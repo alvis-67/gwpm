@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addCommentAction } from "@/actions/trades";
+import { SubmitButton } from "@/components/SubmitButton";
 import { requireSession } from "@/lib/auth";
 import { formatDateTimeZh } from "@/lib/dates";
 import { canAccessTrade } from "@/lib/permissions";
@@ -58,9 +59,7 @@ export default async function TradeCommentsPage({
           <label htmlFor="body">留言（必填）</label>
           <textarea id="body" name="body" required placeholder="輸入留言…" />
         </div>
-        <button type="submit" className="btn btn-primary btn-block md:max-w-xs">
-          送出
-        </button>
+        <SubmitButton label="送出" className="btn btn-primary btn-block md:max-w-xs" />
       </form>
     </div>
   );

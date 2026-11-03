@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createPartnerAction } from "@/actions/partners";
+import { SubmitButton } from "@/components/SubmitButton";
 import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 
 export default async function NewPartnerPage() {
@@ -47,9 +48,7 @@ export default async function NewPartnerPage() {
             autoComplete="new-password"
           />
         </div>
-        <button type="submit" className="btn btn-primary btn-block md:max-w-xs">
-          儲存
-        </button>
+        <SubmitButton label="儲存" className="btn btn-primary btn-block md:max-w-xs" />
       </form>
     </div>
   );

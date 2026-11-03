@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { updatePartnerAction } from "@/actions/partners";
+import { SubmitButton } from "@/components/SubmitButton";
 import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 import { readData } from "@/lib/store";
 
@@ -69,9 +70,7 @@ export default async function EditPartnerPage({
             <input id="password" name="password" type="password" minLength={6} />
           </div>
         )}
-        <button type="submit" className="btn btn-primary btn-block md:max-w-xs">
-          儲存
-        </button>
+        <SubmitButton label="儲存" className="btn btn-primary btn-block md:max-w-xs" />
       </form>
     </div>
   );

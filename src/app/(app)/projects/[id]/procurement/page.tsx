@@ -5,6 +5,7 @@ import {
   updateProcurementStatusAction,
 } from "@/actions/procurement";
 import { ProcurementStatusChip } from "@/components/StatusChip";
+import { SubmitButton } from "@/components/SubmitButton";
 import { canManageProjects, requireSession } from "@/lib/auth";
 import { procurementStatusLabel } from "@/lib/labels";
 import {
@@ -79,9 +80,7 @@ export default async function ProcurementPage({
                         </option>
                       ))}
                     </select>
-                    <button type="submit" className="btn btn-secondary">
-                      更新狀態
-                    </button>
+                    <SubmitButton label="更新狀態" className="btn btn-secondary" />
                   </form>
                 )}
               </div>
@@ -134,9 +133,7 @@ export default async function ProcurementPage({
                 ))}
               </select>
             </div>
-            <button type="submit" className="btn btn-primary">
-              新增
-            </button>
+            <SubmitButton label="新增" className="btn btn-primary" />
           </form>
         </>
       )}

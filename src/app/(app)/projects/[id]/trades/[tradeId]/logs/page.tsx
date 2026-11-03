@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { addWorkLogAction } from "@/actions/trades";
+import { SubmitButton } from "@/components/SubmitButton";
 import { requireSession } from "@/lib/auth";
 import { formatDateTimeZh } from "@/lib/dates";
 import { canAccessTrade, canEditTrade } from "@/lib/permissions";
@@ -51,9 +52,7 @@ export default async function TradeLogsPage({
             <label htmlFor="photos">現場相片（可多選）</label>
             <input id="photos" name="photos" type="file" accept="image/*" multiple capture="environment" />
           </div>
-          <button type="submit" className="btn btn-primary btn-block md:max-w-xs">
-            發表日誌
-          </button>
+          <SubmitButton label="發表日誌" className="btn btn-primary btn-block md:max-w-xs" />
         </form>
       )}
 
