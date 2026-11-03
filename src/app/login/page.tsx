@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { loginAction } from "@/actions/auth";
 import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/labels";
+import { APP_VERSION_LABEL } from "@/lib/version";
 
 export default function LoginPage() {
   const [state, formAction, pending] = useActionState(loginAction, null);
@@ -36,6 +37,7 @@ export default function LoginPage() {
           <div className="brand-mark text-[length:var(--text-2xl)] md:text-[length:var(--text-3xl)] mb-2">
             {PRODUCT_NAME}
           </div>
+          <p className="font-medium mb-2">{APP_VERSION_LABEL}</p>
           <p className="secondary mb-8">{PRODUCT_TAGLINE}</p>
 
           <form action={formAction}>
