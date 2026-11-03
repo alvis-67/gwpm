@@ -30,6 +30,7 @@ export async function createPartnerAction(formData: FormData) {
     }
     data.users.push({
       id: createId("user"),
+      orgId: session.orgId,
       email,
       name,
       companyName,
@@ -60,10 +61,13 @@ export async function updatePartnerAction(formData: FormData) {
   if (!email) throw new Error("登入電郵（必填）");
 
   await updateData(async (data) => {
-    const user = data.users.find((u) => u.id === userId);
-    if (!user || user.roleDefault !== "trade_lead") {
-      throw new Error("找不到負責人");
-    }
+    const user = data.users.find(
+      (u) =>
+        u.id === userId &&
+        u.orgId === session.orgId &&
+        u.roleDefault === "trade_lead",
+    );
+    if (!user) throw new Error("找不到負責人");
     if (
       data.users.some(
         (u) => u.id !== userId && u.email.toLowerCase() === email,

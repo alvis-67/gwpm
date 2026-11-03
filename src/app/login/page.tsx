@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { loginAction } from "@/actions/auth";
 import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/labels";
@@ -67,12 +68,20 @@ export default function LoginPage() {
             </button>
           </form>
 
+          <p className="text-sm secondary mt-6">
+            新公司老闆？{" "}
+            <Link href="/register" style={{ color: "var(--color-brand)", fontWeight: 500 }}>
+              註冊獨立公司帳號
+            </Link>
+          </p>
+
           <div className="mt-8 text-sm secondary">
             <p className="font-medium text-[var(--color-ink)] mb-2">演示帳號</p>
             <ul className="space-y-1 font-mono text-xs">
-              <li>老闆 owner@demo.local / owner123</li>
-              <li>油漆 paint@demo.local / lead123</li>
-              <li>水電 plumb@demo.local / lead123</li>
+              <li>Infunity 老闆 Alvis：owner@demo.local / owner123</li>
+              <li>油漆負責人：paint@demo.local / lead123</li>
+              <li>水電負責人：plumb@demo.local / lead123</li>
+              <li>無關公司老闆：other@demo.local / owner123</li>
             </ul>
           </div>
         </div>

@@ -89,17 +89,29 @@ async function writeToBlob(data: AppData): Promise<void> {
   });
 }
 
+function needsReseed(data: AppData | null): boolean {
+  if (!data) return true;
+  if (data.version !== 2) return true;
+  if (!Array.isArray(data.organizations) || data.organizations.length === 0) {
+    return true;
+  }
+  return false;
+}
+
 function normalizeData(data: AppData): AppData {
+  if (!Array.isArray(data.organizations)) data.organizations = [];
   for (const user of data.users) {
-    if (typeof user.companyName !== "string") {
-      user.companyName = "";
-    }
+    if (typeof user.companyName !== "string") user.companyName = "";
+    if (typeof user.orgId !== "string") user.orgId = "";
+  }
+  for (const project of data.projects) {
+    if (typeof project.orgId !== "string") project.orgId = "";
   }
   return data;
 }
 
 export async function readData(): Promise<AppData> {
-  if (globalForStore.__gwpmMemory) {
+  if (globalForStore.__gwpmMemory && !needsReseed(globalForStore.__gwpmMemory)) {
     return structuredClone(normalizeData(globalForStore.__gwpmMemory));
   }
 
@@ -110,11 +122,11 @@ export async function readData(): Promise<AppData> {
     data = await readFromLocal();
   }
 
-  if (!data) {
+  if (needsReseed(data)) {
     data = await buildSeedData();
     await writeData(data);
   } else {
-    data = normalizeData(data);
+    data = normalizeData(data!);
   }
 
   globalForStore.__gwpmMemory = structuredClone(data);

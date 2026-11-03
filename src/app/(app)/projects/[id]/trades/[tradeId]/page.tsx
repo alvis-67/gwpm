@@ -51,7 +51,9 @@ export default async function TradeDetailPage({
   const assignee = data.users.find((u) => u.id === trade.assigneeUserId);
   const procs = data.procurements.filter((p) => p.tradeId === tradeId);
   const shortage = procs.filter((p) => p.status === "shortage").length;
-  const leads = data.users.filter((u) => u.roleDefault === "trade_lead");
+  const leads = data.users.filter(
+    (u) => u.roleDefault === "trade_lead" && u.orgId === user.orgId,
+  );
 
   return (
     <div className="page">

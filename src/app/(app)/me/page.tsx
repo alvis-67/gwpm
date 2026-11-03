@@ -3,11 +3,14 @@ import { logoutAction } from "@/actions/auth";
 import { updateProfileAction } from "@/actions/profile";
 import { requireSession, isOwner } from "@/lib/auth";
 import { PRODUCT_FULL, PRODUCT_NAME } from "@/lib/labels";
-import { isUsingBlobStore } from "@/lib/store";
+import { getOrganization } from "@/lib/permissions";
+import { isUsingBlobStore, readData } from "@/lib/store";
 
 export default async function MePage() {
   const user = await requireSession();
   const owner = isOwner(user);
+  const data = await readData();
+  const org = getOrganization(data, user.orgId);
   const storeMode = isUsingBlobStore() ? "Vercel Blob（可寫）" : "本地 JSON（開發）";
 
   return (
@@ -32,6 +35,7 @@ export default async function MePage() {
           <p className="secondary text-sm mb-0">{user.email}</p>
           <p className="muted text-xs mb-0">
             {owner ? "老闆（總協調）" : "工種負責人"}
+            {org ? `｜${org.name}` : ""}
           </p>
         </div>
       </div>

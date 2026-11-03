@@ -14,8 +14,10 @@ function secretKey() {
 
 export interface SessionUser {
   id: string;
+  orgId: string;
   email: string;
   name: string;
+  companyName: string;
   phoneE164: string;
   roleDefault: Role;
 }
@@ -23,8 +25,10 @@ export interface SessionUser {
 export async function createSession(user: User): Promise<void> {
   const token = await new SignJWT({
     id: user.id,
+    orgId: user.orgId,
     email: user.email,
     name: user.name,
+    companyName: user.companyName || "",
     phoneE164: user.phoneE164,
     roleDefault: user.roleDefault,
   })
@@ -56,8 +60,10 @@ export async function getSession(): Promise<SessionUser | null> {
     const { payload } = await jwtVerify(token, secretKey());
     return {
       id: String(payload.id),
+      orgId: String(payload.orgId || ""),
       email: String(payload.email),
       name: String(payload.name),
+      companyName: String(payload.companyName || ""),
       phoneE164: String(payload.phoneE164 || ""),
       roleDefault: payload.roleDefault as Role,
     };
@@ -69,6 +75,11 @@ export async function getSession(): Promise<SessionUser | null> {
 export async function requireSession(): Promise<SessionUser> {
   const session = await getSession();
   if (!session) redirect("/login");
+  if (!session.orgId) {
+    // stale cookie from pre-multi-tenant — force re-login
+    await destroySession();
+    redirect("/login");
+  }
   return session;
 }
 

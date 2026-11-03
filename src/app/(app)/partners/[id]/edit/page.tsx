@@ -13,7 +13,12 @@ export default async function EditPartnerPage({
   const session = await requireSession();
   if (!isOwner(session)) redirect("/me");
   const data = await readData();
-  const lead = data.users.find((u) => u.id === id && u.roleDefault === "trade_lead");
+  const lead = data.users.find(
+    (u) =>
+      u.id === id &&
+      u.orgId === session.orgId &&
+      u.roleDefault === "trade_lead",
+  );
   if (!lead) notFound();
 
   return (

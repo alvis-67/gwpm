@@ -21,11 +21,19 @@ export type NotificationType =
   | "procurement"
   | "dependency_ready";
 
+/** 獨立工程公司租戶（各老闆互不相通） */
+export interface Organization {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
+  orgId: string;
   email: string;
   name: string;
-  /** 分包／工程公司名稱（負責人用） */
+  /** 對負責人：分包公司名；對老闆：可與 org.name 相同或留空 */
   companyName: string;
   phoneE164: string;
   roleDefault: Role;
@@ -35,6 +43,7 @@ export interface User {
 
 export interface Project {
   id: string;
+  orgId: string;
   name: string;
   location: string;
   clientDisplayName: string;
@@ -119,7 +128,8 @@ export interface Notification {
 }
 
 export interface AppData {
-  version: 1;
+  version: 2;
+  organizations: Organization[];
   users: User[];
   projects: Project[];
   trades: ProjectTrade[];

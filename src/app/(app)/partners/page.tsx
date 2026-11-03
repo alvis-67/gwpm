@@ -9,7 +9,7 @@ export default async function PartnersPage() {
   if (!isOwner(user)) redirect("/me");
   const data = await readData();
   const leads = data.users
-    .filter((u) => u.roleDefault === "trade_lead")
+    .filter((u) => u.roleDefault === "trade_lead" && u.orgId === user.orgId)
     .sort((a, b) =>
       (a.companyName || a.name).localeCompare(b.companyName || b.name, "zh-Hant"),
     );

@@ -28,6 +28,7 @@ export async function createProjectAction(formData: FormData) {
   await updateData((data) => {
     data.projects.unshift({
       id: projectId,
+      orgId: user.orgId,
       name,
       location,
       clientDisplayName,
@@ -68,7 +69,7 @@ export async function updateProjectStatusAction(
   const user = await requireSession();
   if (!isOwner(user)) throw new Error("無權限");
   await updateData((data) => {
-    const p = data.projects.find((x) => x.id === projectId);
+    const p = data.projects.find((x) => x.id === projectId && x.orgId === user.orgId);
     if (!p) throw new Error("找不到工程案");
     p.status = status;
     p.updatedAt = new Date().toISOString();
@@ -91,7 +92,7 @@ export async function updateProjectAction(formData: FormData) {
   const status = String(formData.get("status") || "planning") as ProjectStatus;
 
   await updateData((data) => {
-    const p = data.projects.find((x) => x.id === projectId);
+    const p = data.projects.find((x) => x.id === projectId && x.orgId === user.orgId);
     if (!p) throw new Error("找不到工程案");
     p.name = name;
     p.location = location;
@@ -117,6 +118,10 @@ export async function renameTradeAction(formData: FormData) {
   await updateData((data) => {
     const trade = data.trades.find((t) => t.id === tradeId);
     if (!trade) throw new Error("找不到工種");
+    const project = data.projects.find(
+      (p) => p.id === trade.projectId && p.orgId === user.orgId,
+    );
+    if (!project) throw new Error("無權限");
     trade.name = name;
     projectId = trade.projectId;
   });
@@ -132,6 +137,10 @@ export async function deleteTradeAction(formData: FormData) {
   await updateData((data) => {
     const trade = data.trades.find((t) => t.id === tradeId);
     if (!trade) throw new Error("找不到工種");
+    const project = data.projects.find(
+      (p) => p.id === trade.projectId && p.orgId === user.orgId,
+    );
+    if (!project) throw new Error("無權限");
     projectId = trade.projectId;
     const logIds = new Set(
       data.workLogs.filter((l) => l.projectTradeId === tradeId).map((l) => l.id),
@@ -160,14 +169,26 @@ export async function assignTradeAction(formData: FormData) {
   await updateData((data) => {
     const trade = data.trades.find((t) => t.id === tradeId);
     if (!trade) throw new Error("找不到工種");
+    const project = data.projects.find(
+      (p) => p.id === trade.projectId && p.orgId === user.orgId,
+    );
+    if (!project) throw new Error("無權限");
+    if (assigneeUserId) {
+      const lead = data.users.find(
+        (u) =>
+          u.id === assigneeUserId &&
+          u.orgId === user.orgId &&
+          u.roleDefault === "trade_lead",
+      );
+      if (!lead) throw new Error("負責人必須屬於本公司");
+    }
     trade.assigneeUserId = assigneeUserId;
     if (assigneeUserId) {
-      const project = data.projects.find((p) => p.id === trade.projectId);
       pushNotification(data, {
         userId: assigneeUserId,
         type: "assigned",
         title: "您已被指派工種",
-        body: `${project?.name || "工程"}｜${trade.name}`,
+        body: `${project.name}｜${trade.name}`,
         entityType: "trade",
         entityId: trade.id,
         href: `/projects/${trade.projectId}/trades/${trade.id}`,
@@ -186,6 +207,10 @@ export async function updateTradeScheduleAction(formData: FormData) {
   await updateData((data) => {
     const trade = data.trades.find((t) => t.id === tradeId);
     if (!trade) throw new Error("找不到工種");
+    const project = data.projects.find(
+      (p) => p.id === trade.projectId && p.orgId === user.orgId,
+    );
+    if (!project) throw new Error("無權限");
     trade.plannedStart = String(formData.get("plannedStart") || "");
     trade.plannedEnd = String(formData.get("plannedEnd") || "");
     trade.notes = String(formData.get("notes") || trade.notes);
@@ -201,6 +226,10 @@ export async function addTradeAction(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   if (!name) throw new Error("工種名稱（必填）");
   await updateData((data) => {
+    const project = data.projects.find(
+      (p) => p.id === projectId && p.orgId === user.orgId,
+    );
+    if (!project) throw new Error("找不到工程案");
     const max = data.trades
       .filter((t) => t.projectId === projectId)
       .reduce((m, t) => Math.max(m, t.sortOrder), 0);
@@ -232,6 +261,10 @@ export async function addDependencyAction(formData: FormData) {
     throw new Error("請選擇有效的前後置工種");
   }
   await updateData((data) => {
+    const project = data.projects.find(
+      (p) => p.id === projectId && p.orgId === user.orgId,
+    );
+    if (!project) throw new Error("找不到工程案");
     data.dependencies.push({
       id: createId("dep"),
       projectId,
@@ -249,6 +282,10 @@ export async function deleteDependencyAction(formData: FormData) {
   const id = String(formData.get("id") || "");
   const projectId = String(formData.get("projectId") || "");
   await updateData((data) => {
+    const project = data.projects.find(
+      (p) => p.id === projectId && p.orgId === user.orgId,
+    );
+    if (!project) throw new Error("找不到工程案");
     data.dependencies = data.dependencies.filter((d) => d.id !== id);
   });
   revalidatePath(`/projects/${projectId}/dependencies`);

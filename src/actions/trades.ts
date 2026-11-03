@@ -32,9 +32,10 @@ export async function updateTradeStatusAction(
     }
 
     const project = data.projects.find((p) => p.id === trade.projectId);
+    if (!project || project.orgId !== user.orgId) throw new Error("無權限");
     const recipients = new Set<string>();
     data.users
-      .filter((u) => u.roleDefault === "owner")
+      .filter((u) => u.roleDefault === "owner" && u.orgId === user.orgId)
       .forEach((u) => recipients.add(u.id));
     if (trade.assigneeUserId) recipients.add(trade.assigneeUserId);
     recipients.delete(user.id);
@@ -136,12 +137,13 @@ export async function addCommentAction(formData: FormData) {
     });
 
     const project = data.projects.find((p) => p.id === trade.projectId);
+    if (!project || project.orgId !== user.orgId) throw new Error("無權限");
     const recipients = new Set<string>();
     if (isOwner(user)) {
       if (trade.assigneeUserId) recipients.add(trade.assigneeUserId);
     } else {
       data.users
-        .filter((u) => u.roleDefault === "owner")
+        .filter((u) => u.roleDefault === "owner" && u.orgId === user.orgId)
         .forEach((u) => recipients.add(u.id));
     }
     recipients.delete(user.id);
@@ -156,7 +158,6 @@ export async function addCommentAction(formData: FormData) {
         href: `/projects/${trade.projectId}/trades/${trade.id}/comments`,
       });
     }
-    void project;
   });
 
   revalidatePath("/notifications");

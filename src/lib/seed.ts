@@ -12,12 +12,18 @@ export async function buildSeedData(): Promise<AppData> {
   const ownerPass = await hash("owner123", 10);
   const leadPass = await hash("lead123", 10);
 
+  const infunityOrgId = createId("org");
+  const otherOrgId = createId("org");
+
   const ownerId = createId("user");
   const paintId = createId("user");
   const plumbId = createId("user");
+  const otherOwnerId = createId("user");
 
   const projectId = createId("proj");
   const project2Id = createId("proj");
+  const project3Id = createId("proj");
+  const otherProjectId = createId("proj");
 
   const trades = [
     {
@@ -93,15 +99,29 @@ export async function buildSeedData(): Promise<AppData> {
 
   const log1 = createId("log");
   const log2 = createId("log");
+  const otherTradeId = createId("trade");
 
   return {
-    version: 1,
+    version: 2,
+    organizations: [
+      {
+        id: infunityOrgId,
+        name: "Infunity Company Limited",
+        createdAt: now,
+      },
+      {
+        id: otherOrgId,
+        name: "示例無關工程有限公司",
+        createdAt: now,
+      },
+    ],
     users: [
       {
         id: ownerId,
+        orgId: infunityOrgId,
         email: "owner@demo.local",
-        name: "陳老闆",
-        companyName: "良願工程",
+        name: "Alvis",
+        companyName: "Infunity Company Limited",
         phoneE164: "+85291234567",
         roleDefault: "owner",
         passwordHash: ownerPass,
@@ -109,6 +129,7 @@ export async function buildSeedData(): Promise<AppData> {
       },
       {
         id: paintId,
+        orgId: infunityOrgId,
         email: "paint@demo.local",
         name: "李師傅",
         companyName: "美新油漆工程",
@@ -119,6 +140,7 @@ export async function buildSeedData(): Promise<AppData> {
       },
       {
         id: plumbId,
+        orgId: infunityOrgId,
         email: "plumb@demo.local",
         name: "王師傅",
         companyName: "通達水電",
@@ -127,29 +149,68 @@ export async function buildSeedData(): Promise<AppData> {
         passwordHash: leadPass,
         createdAt: now,
       },
+      {
+        id: otherOwnerId,
+        orgId: otherOrgId,
+        email: "other@demo.local",
+        name: "陳生",
+        companyName: "示例無關工程有限公司",
+        phoneE164: "+85290001111",
+        roleDefault: "owner",
+        passwordHash: ownerPass,
+        createdAt: now,
+      },
     ],
     projects: [
       {
         id: projectId,
+        orgId: infunityOrgId,
         name: "太古城單位翻新",
         location: "香港太古城道 18 號",
         clientDisplayName: "張先生",
         status: "active",
         plannedStart: d(-14),
         plannedEnd: d(21),
-        notes: "示範工程案",
+        notes: "Infunity 示範工程案",
         createdAt: now,
         updatedAt: now,
       },
       {
         id: project2Id,
+        orgId: infunityOrgId,
         name: "觀塘辦公室裝修",
         location: "觀塘開源道",
-        clientDisplayName: "良願實業",
+        clientDisplayName: "Infunity 內部",
         status: "planning",
         plannedStart: d(10),
         plannedEnd: d(45),
         notes: "",
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: project3Id,
+        orgId: infunityOrgId,
+        name: "沙田商舖翻新",
+        location: "沙田正街",
+        clientDisplayName: "林小姐",
+        status: "active",
+        plannedStart: d(-5),
+        plannedEnd: d(30),
+        notes: "",
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: otherProjectId,
+        orgId: otherOrgId,
+        name: "無關公司工程案（隔離測試）",
+        location: "屯門",
+        clientDisplayName: "外客",
+        status: "active",
+        plannedStart: d(0),
+        plannedEnd: d(20),
+        notes: "Alvis／Infunity 不應看見此案",
         createdAt: now,
         updatedAt: now,
       },
@@ -165,6 +226,19 @@ export async function buildSeedData(): Promise<AppData> {
         plannedStart: d(12),
         plannedEnd: d(20),
         actualStart: null,
+        actualEnd: null,
+        sortOrder: 1,
+        notes: "",
+      },
+      {
+        id: otherTradeId,
+        projectId: otherProjectId,
+        name: "泥水",
+        assigneeUserId: null,
+        status: "in_progress",
+        plannedStart: d(0),
+        plannedEnd: d(10),
+        actualStart: d(0),
         actualEnd: null,
         sortOrder: 1,
         notes: "",
@@ -247,7 +321,7 @@ export async function buildSeedData(): Promise<AppData> {
         userId: ownerId,
         type: "tomorrow_entry",
         title: "明日進場提醒",
-        body: "油漆｜李師傅（油漆）計劃明日進場",
+        body: "油漆｜美新油漆工程｜李師傅計劃明日進場",
         entityType: "trade",
         entityId: paintTrade.id,
         href: "/today",
@@ -259,7 +333,7 @@ export async function buildSeedData(): Promise<AppData> {
         userId: paintId,
         type: "comment",
         title: "新留言",
-        body: "陳老闆於「油漆」留言",
+        body: "Alvis 於「油漆」留言",
         entityType: "trade",
         entityId: paintTrade.id,
         href: `/projects/${projectId}/trades/${paintTrade.id}/comments`,

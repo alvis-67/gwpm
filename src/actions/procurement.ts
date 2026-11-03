@@ -25,6 +25,10 @@ export async function createProcurementAction(formData: FormData) {
   const status = String(formData.get("status") || "todo") as ProcurementStatus;
 
   await updateData((data) => {
+    const project = data.projects.find(
+      (p) => p.id === projectId && p.orgId === user.orgId,
+    );
+    if (!project) throw new Error("找不到工程案");
     data.procurements.unshift({
       id: createId("proc"),
       projectId,
@@ -61,13 +65,16 @@ export async function updateProcurementStatusAction(formData: FormData) {
     item.updatedAt = new Date().toISOString();
 
     const project = data.projects.find((p) => p.id === item.projectId);
-    for (const owner of data.users.filter((u) => u.roleDefault === "owner")) {
+    if (!project || project.orgId !== user.orgId) throw new Error("無權限");
+    for (const owner of data.users.filter(
+      (u) => u.roleDefault === "owner" && u.orgId === user.orgId,
+    )) {
       if (owner.id === user.id) continue;
       pushNotification(data, {
         userId: owner.id,
         type: "procurement",
         title: "採購狀態更新",
-        body: `${project?.name || ""}｜${item.name} → ${procurementStatusLabel[status]}`,
+        body: `${project.name}｜${item.name} → ${procurementStatusLabel[status]}`,
         entityType: "procurement",
         entityId: item.id,
         href: `/projects/${item.projectId}/procurement`,
