@@ -10,7 +10,7 @@ import { joinProjectNotes } from "@/lib/project-docs";
 import { DEFAULT_TRADE_TEMPLATES, type ProjectStatus } from "@/lib/types";
 import { pushNotification } from "@/lib/notifications";
 
-function readProjectName(formData: FormData): string {
+function readTradeName(formData: FormData): string {
   const choice = String(formData.get("nameChoice") || "").trim();
   const custom = String(formData.get("customName") || "").trim();
   if (choice === "__new__") return custom;
@@ -29,7 +29,7 @@ export async function createProjectAction(formData: FormData) {
   const user = await requireSession();
   if (!canManageProjects(user)) throw new Error("無權限");
 
-  const name = readProjectName(formData);
+  const name = String(formData.get("name") || "").trim();
   const location = String(formData.get("location") || "").trim();
   const clientDisplayName = String(formData.get("clientDisplayName") || "").trim();
   const plannedStart = String(formData.get("plannedStart") || "");
@@ -107,7 +107,7 @@ export async function updateProjectAction(formData: FormData) {
   const user = await requireSession();
   if (!canManageProjects(user)) throw new Error("無權限");
   const projectId = String(formData.get("projectId") || "");
-  const name = readProjectName(formData);
+  const name = String(formData.get("name") || "").trim();
   if (!name) throw new Error("工程案名稱（必填）");
   const location = String(formData.get("location") || "").trim();
   const clientDisplayName = String(formData.get("clientDisplayName") || "").trim();
@@ -274,7 +274,7 @@ export async function addTradeAction(formData: FormData) {
   const user = await requireSession();
   if (!canManageProjects(user)) throw new Error("無權限");
   const projectId = String(formData.get("projectId") || "");
-  const name = String(formData.get("name") || "").trim();
+  const name = readTradeName(formData);
   if (!name) throw new Error("工種名稱（必填）");
   await updateData((data) => {
     const project = managedProject(data, user, projectId);

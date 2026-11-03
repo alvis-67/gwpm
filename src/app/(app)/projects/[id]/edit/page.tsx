@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { updateProjectAction } from "@/actions/projects";
-import { ProjectNameField } from "@/components/ProjectNameField";
 import { canManageProjects, requireSession } from "@/lib/auth";
 import { projectStatusLabel } from "@/lib/labels";
-import { canAccessProject, visibleProjects } from "@/lib/permissions";
+import { canAccessProject } from "@/lib/permissions";
 import { splitProjectNotes } from "@/lib/project-docs";
-import { projectNameOptions } from "@/lib/project-names";
 import { readData } from "@/lib/store";
 import { PROJECT_STATUSES } from "@/lib/types";
 
@@ -23,10 +21,6 @@ export default async function EditProjectPage({
   const project = data.projects.find((p) => p.id === id);
   if (!project) notFound();
   const docs = splitProjectNotes(project.notes);
-  const nameOptions = projectNameOptions(
-    visibleProjects(data, user).map((item) => item.name),
-    project.name,
-  );
 
   return (
     <div className="page">
@@ -37,7 +31,10 @@ export default async function EditProjectPage({
 
       <form action={updateProjectAction}>
         <input type="hidden" name="projectId" value={id} />
-        <ProjectNameField options={nameOptions} defaultName={project.name} />
+        <div className="field">
+          <label htmlFor="name">工程案名稱（必填）</label>
+          <input id="name" name="name" required defaultValue={project.name} />
+        </div>
         <div className="field">
           <label htmlFor="location">工作地點</label>
           <input id="location" name="location" defaultValue={project.location} />

@@ -2,19 +2,12 @@
 
 import { useState } from "react";
 
-export function ProjectNameField({
-  options,
-  defaultName = "",
-}: {
-  options: string[];
-  defaultName?: string;
-}) {
-  const known = defaultName && options.includes(defaultName);
-  const [choice, setChoice] = useState(known ? defaultName : defaultName ? "__new__" : "");
+export function TradeNameField({ options }: { options: string[] }) {
+  const [choice, setChoice] = useState("");
 
   return (
     <div className="field">
-      <label htmlFor="nameChoice">工程案名稱（必填）</label>
+      <label htmlFor="nameChoice">工種名稱（必填）</label>
       <select
         id="nameChoice"
         name="nameChoice"
@@ -23,7 +16,7 @@ export function ProjectNameField({
         onChange={(event) => setChoice(event.target.value)}
       >
         <option value="" disabled>
-          選擇名稱
+          選擇工種
         </option>
         {options.map((name) => (
           <option key={name} value={name}>
@@ -34,13 +27,12 @@ export function ProjectNameField({
       </select>
       {choice === "__new__" && (
         <>
-          <label htmlFor="customName">新名稱（必填）</label>
+          <label htmlFor="customName">新工種名稱（必填）</label>
           <input
             id="customName"
             name="customName"
             required
             placeholder="輸入後會記住，下次出現在選單"
-            defaultValue={known ? "" : defaultName}
           />
         </>
       )}

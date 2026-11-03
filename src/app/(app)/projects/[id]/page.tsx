@@ -4,6 +4,7 @@ import { addTradeAction, deleteProjectAction } from "@/actions/projects";
 import { ConfirmTwiceButton } from "@/components/ConfirmTwiceButton";
 import { DependencyBanner } from "@/components/DependencyBanner";
 import { ProgressItem } from "@/components/ProgressItem";
+import { TradeNameField } from "@/components/TradeNameField";
 import { TradeStatusChip, ProjectStatusChip } from "@/components/StatusChip";
 import { canManageProjects, requireSession } from "@/lib/auth";
 import { formatDateTimeZh, formatDateZh } from "@/lib/dates";
@@ -11,12 +12,13 @@ import { evaluateDependency, projectBlockedTrades } from "@/lib/dependencies";
 import { formatLeadLabel } from "@/lib/format";
 import {
   canAccessProject,
+  visibleProjects,
   visibleTradesForProject,
 } from "@/lib/permissions";
+import { tradeNameOptions } from "@/lib/trade-names";
 import { customerPath, splitProjectNotes } from "@/lib/project-docs";
 import { readData } from "@/lib/store";
 import { tradeStatusLabel } from "@/lib/labels";
-import { DEFAULT_TRADE_TEMPLATES } from "@/lib/types";
 
 export default async function ProjectOverviewPage({
   params,
@@ -30,6 +32,10 @@ export default async function ProjectOverviewPage({
   const project = data.projects.find((p) => p.id === id);
   if (!project) notFound();
   const owner = canManageProjects(user);
+  const visibleIds = new Set(visibleProjects(data, user).map((item) => item.id));
+  const tradeOptions = tradeNameOptions(
+    data.trades.filter((trade) => visibleIds.has(trade.projectId)).map((trade) => trade.name),
+  );
   const docs = splitProjectNotes(project.notes);
   const trades = visibleTradesForProject(data, user, id);
   const blocked = owner ? projectBlockedTrades(data, id) : [];
@@ -129,26 +135,11 @@ export default async function ProjectOverviewPage({
         <>
           <h2 className="section-title">新增工種</h2>
           <p className="secondary text-sm mb-3">
-            可自訂任何工種名稱，不必使用預設範本。常用參考：
-            {DEFAULT_TRADE_TEMPLATES.join("、")}。
+            選預設工種，或選「新增」輸入名稱。輸入過的名稱下次會出現在選單。
           </p>
           <form action={addTradeAction} className="mb-2">
             <input type="hidden" name="projectId" value={id} />
-            <div className="field">
-              <label htmlFor="tradeName">工種名稱（必填）</label>
-              <input
-                id="tradeName"
-                name="name"
-                required
-                placeholder="例：防水、鋁窗、空調、天花…"
-                list="trade-suggestions"
-              />
-              <datalist id="trade-suggestions">
-                {DEFAULT_TRADE_TEMPLATES.map((t) => (
-                  <option key={t} value={t} />
-                ))}
-              </datalist>
-            </div>
+            <TradeNameField options={tradeOptions} />
             <button type="submit" className="btn btn-primary">
               新增工種
             </button>
