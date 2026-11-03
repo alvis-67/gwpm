@@ -12,11 +12,22 @@ export interface ProjectDocs {
   quotationNumber: string;
   invoiceNumber: string;
   leadUserId: string;
+  /** People who can be chosen as 負責人 on this project only. */
+  assigneeIds: string[];
   comments: ProjectComment[];
 }
 
 function emptyDocs(text: string): ProjectDocs {
-  return { text, quotationNumber: "", invoiceNumber: "", leadUserId: "", comments: [] };
+  return { text, quotationNumber: "", invoiceNumber: "", leadUserId: "", assigneeIds: [], comments: [] };
+}
+
+function readIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const ids: string[] = [];
+  for (const item of value) {
+    if (typeof item === "string" && item !== "" && !ids.includes(item)) ids.push(item);
+  }
+  return ids;
 }
 
 function readComments(value: unknown): ProjectComment[] {
@@ -45,6 +56,7 @@ export function splitProjectNotes(notes: string): ProjectDocs {
       quotationNumber?: unknown;
       invoiceNumber?: unknown;
       leadUserId?: unknown;
+      assigneeIds?: unknown;
       comments?: unknown;
     };
     return {
@@ -52,6 +64,7 @@ export function splitProjectNotes(notes: string): ProjectDocs {
       quotationNumber: typeof parsed.quotationNumber === "string" ? parsed.quotationNumber : "",
       invoiceNumber: typeof parsed.invoiceNumber === "string" ? parsed.invoiceNumber : "",
       leadUserId: typeof parsed.leadUserId === "string" ? parsed.leadUserId : "",
+      assigneeIds: readIds(parsed.assigneeIds),
       comments: readComments(parsed.comments),
     };
   } catch {
@@ -63,19 +76,23 @@ export function joinProjectNotes(
   text: string,
   quotationNumber: string,
   invoiceNumber: string,
-  extra?: { leadUserId?: string; comments?: ProjectComment[] },
+  extra?: { leadUserId?: string; assigneeIds?: string[]; comments?: ProjectComment[] },
 ): string {
   const quotation = quotationNumber.trim();
   const invoice = invoiceNumber.trim();
   const leadUserId = extra?.leadUserId?.trim() || "";
+  const assigneeIds = readIds(extra?.assigneeIds);
   const comments = extra?.comments ?? [];
   const body = text.replace(/\s+$/, "");
-  if (!quotation && !invoice && !leadUserId && comments.length === 0) return body;
+  if (!quotation && !invoice && !leadUserId && assigneeIds.length === 0 && comments.length === 0) {
+    return body;
+  }
   const payload: Record<string, unknown> = {
     quotationNumber: quotation,
     invoiceNumber: invoice,
   };
   if (leadUserId) payload.leadUserId = leadUserId;
+  if (assigneeIds.length > 0) payload.assigneeIds = assigneeIds;
   if (comments.length > 0) payload.comments = comments;
   return `${body}${body ? "\n\n" : ""}${MARK}${JSON.stringify(payload)}`;
 }

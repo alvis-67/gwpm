@@ -5,7 +5,13 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { isAdmin, isOwner, requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
-import { assignableUsers, canAccessProject, managedProject } from "@/lib/permissions";
+import {
+  assignableUsers,
+  canAccessProject,
+  managedProject,
+  projectAssigneeIds,
+  rememberProjectAssignee,
+} from "@/lib/permissions";
 import { updateData } from "@/lib/store";
 import { joinProjectNotes, splitProjectNotes } from "@/lib/project-docs";
 import { DEFAULT_TRADE_TEMPLATES, type ProjectStatus } from "@/lib/types";
@@ -132,6 +138,7 @@ export async function updateProjectAction(formData: FormData) {
     const kept = splitProjectNotes(p.notes);
     p.notes = joinProjectNotes(notes, kept.quotationNumber, kept.invoiceNumber, {
       leadUserId: kept.leadUserId,
+      assigneeIds: kept.assigneeIds,
       comments: kept.comments,
     });
     p.status = status;
@@ -231,9 +238,9 @@ export async function assignTradeAction(formData: FormData) {
     if (!trade) throw new Error("找不到工種");
     const project = managedProject(data, user, trade.projectId);
     if (!project) throw new Error("無權限");
-    if (assigneeUserId && !assignableUsers(data).some((candidate) => candidate.id === assigneeUserId)) {
-      throw new Error("請選擇負責人");
-    }
+    const allowed = new Set(projectAssigneeIds(data, project));
+    if (assigneeUserId && !allowed.has(assigneeUserId)) throw new Error("請選擇負責人");
+    rememberProjectAssignee(data, project, assigneeUserId || trade.assigneeUserId);
     trade.assigneeUserId = assigneeUserId;
     if (assigneeUserId) {
       pushNotification(data, {
@@ -348,6 +355,7 @@ export async function setProjectLeadAction(formData: FormData) {
     const kept = splitProjectNotes(project.notes);
     project.notes = joinProjectNotes(kept.text, kept.quotationNumber, kept.invoiceNumber, {
       leadUserId,
+      assigneeIds: kept.assigneeIds,
       comments: kept.comments,
     });
     project.updatedAt = new Date().toISOString();
@@ -370,6 +378,7 @@ export async function addProjectCommentAction(formData: FormData) {
     const kept = splitProjectNotes(project.notes);
     project.notes = joinProjectNotes(kept.text, kept.quotationNumber, kept.invoiceNumber, {
       leadUserId: kept.leadUserId,
+      assigneeIds: kept.assigneeIds,
       comments: [
         ...kept.comments,
         {

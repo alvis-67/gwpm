@@ -4,9 +4,14 @@ import { isAdmin, requireSession } from "@/lib/auth";
 import { readData } from "@/lib/store";
 import { NewAccountForm } from "./form";
 
-export default async function NewAccountPage() {
+export default async function NewAccountPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ projectId?: string }>;
+}) {
   const user = await requireSession();
   if (!isAdmin(user)) redirect("/me");
+  const projectId = (await searchParams).projectId || "";
   const data = await readData();
   const organizations = [...data.organizations].sort((a, b) =>
     a.name.localeCompare(b.name, "zh-Hant"),
@@ -21,7 +26,7 @@ export default async function NewAccountPage() {
       <p className="secondary text-sm mb-4">
         對方用你設定的電郵與密碼登入，不能自行註冊。
       </p>
-      <NewAccountForm organizations={organizations} />
+      <NewAccountForm organizations={organizations} projectId={projectId} />
     </div>
   );
 }

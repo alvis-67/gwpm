@@ -1,5 +1,5 @@
 import { isAdmin, isOwner, type SessionUser } from "./auth";
-import { splitProjectNotes } from "./project-docs";
+import { joinProjectNotes, splitProjectNotes } from "./project-docs";
 import type { AppData, Project, ProjectTrade, User } from "./types";
 
 export function orgUsers(data: AppData, orgId: string): User[] {
@@ -124,6 +124,46 @@ export function canReportProcurement(
 
 export function orgTradeLeads(data: AppData, orgId: string): User[] {
   return orgUsers(data, orgId).filter((u) => u.roleDefault === "trade_lead");
+}
+
+/**
+ * 負責人 choices for this project only: its Leader, people already assigned on its
+ * trades, and ids saved on the project. Another project's people are not included.
+ */
+export function projectAssigneeIds(data: AppData, project: Project): string[] {
+  const docs = splitProjectNotes(project.notes);
+  const ids = new Set<string>();
+  if (docs.leadUserId) ids.add(docs.leadUserId);
+  for (const id of docs.assigneeIds) ids.add(id);
+  for (const trade of data.trades) {
+    if (trade.projectId === project.id && trade.assigneeUserId) ids.add(trade.assigneeUserId);
+  }
+  return [...ids];
+}
+
+export function projectAssignees(data: AppData, projectId: string): User[] {
+  const project = data.projects.find((item) => item.id === projectId);
+  if (!project) return [];
+  const ids = new Set(projectAssigneeIds(data, project));
+  return data.users
+    .filter((user) => ids.has(user.id))
+    .sort((a, b) => {
+      const company = a.companyName.localeCompare(b.companyName, "zh-Hant");
+      if (company !== 0) return company;
+      return a.name.localeCompare(b.name, "zh-Hant");
+    });
+}
+
+/** Keep a person on this project's 指派負責人 list without adding them to any other project. */
+export function rememberProjectAssignee(data: AppData, project: Project, userId: string | null) {
+  const docs = splitProjectNotes(project.notes);
+  const ids = new Set(projectAssigneeIds(data, project));
+  if (userId) ids.add(userId);
+  project.notes = joinProjectNotes(docs.text, docs.quotationNumber, docs.invoiceNumber, {
+    leadUserId: docs.leadUserId,
+    comments: docs.comments,
+    assigneeIds: [...ids],
+  });
 }
 
 /** Anyone who can log in as a company boss or a trade 負責人, in any company. */

@@ -5,13 +5,16 @@ import { createOrgAccountAction } from "@/actions/accounts";
 
 export function NewAccountForm({
   organizations,
+  projectId = "",
 }: {
   organizations: { id: string; name: string }[];
+  projectId?: string;
 }) {
   const [state, formAction, pending] = useActionState(createOrgAccountAction, null);
 
   return (
     <form action={formAction}>
+      {projectId ? <input type="hidden" name="projectId" value={projectId} /> : null}
       <div className="field">
         <label htmlFor="name">姓名（必填）</label>
         <input id="name" name="name" required />

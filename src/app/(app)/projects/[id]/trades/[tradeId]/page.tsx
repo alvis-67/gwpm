@@ -16,7 +16,7 @@ import { formatDateZh } from "@/lib/dates";
 import { evaluateDependency } from "@/lib/dependencies";
 import { formatLeadLabel } from "@/lib/format";
 import {
-  assignableUsers,
+  projectAssignees,
   canAccessProject,
   canAccessTrade,
   canEditTrade,
@@ -55,7 +55,7 @@ export default async function TradeDetailPage({
   const assignee = data.users.find((u) => u.id === trade.assigneeUserId);
   const procs = data.procurements.filter((p) => p.tradeId === tradeId);
   const shortage = procs.filter((p) => p.status === "shortage").length;
-  const leads = assignableUsers(data);
+  const leads = projectAssignees(data, id);
 
   return (
     <div className="page">
@@ -114,7 +114,7 @@ export default async function TradeDetailPage({
           {canManageProjects(user) && (
             <p className="secondary text-sm mb-2">
               找不到公司？先到{" "}
-              <Link href="/partners" className="btn btn-tertiary" style={{ display: "inline", padding: 0, minHeight: 0 }}>
+              <Link href={`/partners?projectId=${id}`} className="btn btn-tertiary" style={{ display: "inline", padding: 0, minHeight: 0 }}>
                 工程公司／負責人
               </Link>{" "}
               新增。

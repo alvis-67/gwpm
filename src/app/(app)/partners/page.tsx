@@ -4,9 +4,14 @@ import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 import { formatLeadLabel } from "@/lib/format";
 import { readData } from "@/lib/store";
 
-export default async function PartnersPage() {
+export default async function PartnersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ projectId?: string }>;
+}) {
   const user = await requireSession();
   if (!canManageProjects(user)) redirect("/me");
+  const projectId = (await searchParams).projectId || "";
   const admin = isAdmin(user);
   const data = await readData();
   const leads = data.users
@@ -20,11 +25,17 @@ export default async function PartnersPage() {
       <header className="page-header">
         <h1 className="page-title">工程公司／負責人</h1>
         {admin ? (
-          <Link href="/accounts/new" className="btn btn-primary">
+          <Link
+            href={projectId ? `/accounts/new?projectId=${projectId}` : "/accounts/new"}
+            className="btn btn-primary"
+          >
             ＋ 建立帳號
           </Link>
         ) : (
-          <Link href="/partners/new" className="btn btn-primary">
+          <Link
+            href={projectId ? `/partners/new?projectId=${projectId}` : "/partners/new"}
+            className="btn btn-primary"
+          >
             ＋ 新增
           </Link>
         )}

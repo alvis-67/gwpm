@@ -3,8 +3,9 @@
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
+import { canManageProjects, isAdmin, isOwner, requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
+import { canLeadProject, rememberProjectAssignee } from "@/lib/permissions";
 import { updateData } from "@/lib/store";
 
 export async function createPartnerAction(formData: FormData) {
@@ -24,6 +25,7 @@ export async function createPartnerAction(formData: FormData) {
   if (password.length < 6) throw new Error("密碼至少 6 位");
 
   const passwordHash = await hash(password, 10);
+  const projectId = String(formData.get("projectId") || "");
 
   await updateData((data) => {
     const orgId = admin ? String(formData.get("orgId") || "") : session.orgId;
@@ -33,8 +35,9 @@ export async function createPartnerAction(formData: FormData) {
     if (data.users.some((u) => u.email.toLowerCase() === email)) {
       throw new Error("此電郵已存在");
     }
+    const userId = createId("user");
     data.users.push({
-      id: createId("user"),
+      id: userId,
       orgId,
       email,
       name,
@@ -44,6 +47,14 @@ export async function createPartnerAction(formData: FormData) {
       passwordHash,
       createdAt: new Date().toISOString(),
     });
+    const project = data.projects.find((item) => item.id === projectId);
+    if (
+      project &&
+      (canLeadProject(data, session, project.id) ||
+        (isOwner(session) && session.orgId === project.orgId))
+    ) {
+      rememberProjectAssignee(data, project, userId);
+    }
   });
 
   revalidatePath("/partners");

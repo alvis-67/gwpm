@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { isAdmin, requireSession } from "@/lib/auth";
 import { ADMIN_EMAIL } from "@/lib/admin-account";
 import { createId } from "@/lib/ids";
+import { rememberProjectAssignee } from "@/lib/permissions";
 import { updateData } from "@/lib/store";
 import type { AppData, Role } from "@/lib/types";
 
@@ -37,6 +38,7 @@ export async function createOrgAccountAction(
   const phoneE164 = String(formData.get("phoneE164") || "").trim();
   const orgChoice = String(formData.get("orgId") || "");
   const newOrgName = String(formData.get("newOrgName") || "").trim();
+  const projectId = String(formData.get("projectId") || "");
 
   if (!name) return { error: "姓名（必填）" };
   if (!email) return { error: "電郵（必填）" };
@@ -64,8 +66,9 @@ export async function createOrgAccountAction(
         if (!org) throw new Error("找不到工程公司");
         orgName = org.name;
       }
+      const userId = createId("user");
       data.users.push({
-        id: createId("user"),
+        id: userId,
         orgId,
         email,
         name,
@@ -75,6 +78,8 @@ export async function createOrgAccountAction(
         passwordHash: await hash(password, 10),
         createdAt: new Date().toISOString(),
       });
+      const project = data.projects.find((item) => item.id === projectId);
+      if (project) rememberProjectAssignee(data, project, userId);
     });
   } catch (error) {
     return { error: error instanceof Error ? error.message : "建立失敗" };
