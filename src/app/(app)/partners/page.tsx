@@ -19,9 +19,13 @@ export default async function PartnersPage() {
     <div className="page">
       <header className="page-header">
         <h1 className="page-title">工程公司／負責人</h1>
-        {admin && (
+        {admin ? (
           <Link href="/accounts/new" className="btn btn-primary">
             ＋ 建立帳號
+          </Link>
+        ) : (
+          <Link href="/partners/new" className="btn btn-primary">
+            ＋ 新增
           </Link>
         )}
       </header>

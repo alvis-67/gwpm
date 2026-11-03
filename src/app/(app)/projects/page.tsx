@@ -31,7 +31,7 @@ export default async function ProjectsPage({
         <h1 className="page-title">工程</h1>
         {owner && (
           <Link href="/projects/new" className="btn btn-primary">
-            ＋ 建立
+            建立新工程
           </Link>
         )}
       </header>
@@ -61,7 +61,7 @@ export default async function ProjectsPage({
           <p>尚無工程案</p>
           {owner && (
             <Link href="/projects/new" className="btn btn-primary mt-4">
-              建立工程案
+              建立新工程
             </Link>
           )}
         </div>

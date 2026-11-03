@@ -48,22 +48,6 @@ export default async function EditProjectPage({
           />
         </div>
         <div className="field">
-          <label htmlFor="quotationNumber">報價編號</label>
-          <input
-            id="quotationNumber"
-            name="quotationNumber"
-            defaultValue={docs.quotationNumber}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="invoiceNumber">發票編號</label>
-          <input
-            id="invoiceNumber"
-            name="invoiceNumber"
-            defaultValue={docs.invoiceNumber}
-          />
-        </div>
-        <div className="field">
           <label htmlFor="status">工程狀態</label>
           <select id="status" name="status" defaultValue={project.status}>
             {PROJECT_STATUSES.map((s) => (

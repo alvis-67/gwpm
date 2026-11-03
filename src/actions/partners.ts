@@ -9,14 +9,14 @@ import { updateData } from "@/lib/store";
 
 export async function createPartnerAction(formData: FormData) {
   const session = await requireSession();
-  if (!isAdmin(session)) throw new Error("無權限");
+  if (!canManageProjects(session)) throw new Error("無權限");
+  const admin = isAdmin(session);
 
   const companyName = String(formData.get("companyName") || "").trim();
   const name = String(formData.get("name") || "").trim();
   const phoneE164 = String(formData.get("phoneE164") || "").trim();
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
-  const orgId = String(formData.get("orgId") || "");
 
   if (!companyName) throw new Error("工程公司名稱（必填）");
   if (!name) throw new Error("負責人姓名（必填）");
@@ -26,6 +26,7 @@ export async function createPartnerAction(formData: FormData) {
   const passwordHash = await hash(password, 10);
 
   await updateData((data) => {
+    const orgId = admin ? String(formData.get("orgId") || "") : session.orgId;
     if (!data.organizations.some((org) => org.id === orgId)) {
       throw new Error("請選擇工程公司");
     }

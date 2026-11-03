@@ -6,7 +6,7 @@ import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
 import { managedProject } from "@/lib/permissions";
 import { updateData } from "@/lib/store";
-import { joinProjectNotes } from "@/lib/project-docs";
+import { joinProjectNotes, splitProjectNotes } from "@/lib/project-docs";
 import { DEFAULT_TRADE_TEMPLATES, type ProjectStatus } from "@/lib/types";
 import { pushNotification } from "@/lib/notifications";
 
@@ -18,11 +18,7 @@ function readTradeName(formData: FormData): string {
 }
 
 function readProjectNotes(formData: FormData): string {
-  return joinProjectNotes(
-    String(formData.get("notes") || ""),
-    String(formData.get("quotationNumber") || ""),
-    String(formData.get("invoiceNumber") || ""),
-  );
+  return String(formData.get("notes") || "").replace(/\s+$/, "");
 }
 
 export async function createProjectAction(formData: FormData) {
@@ -124,7 +120,8 @@ export async function updateProjectAction(formData: FormData) {
     p.clientDisplayName = clientDisplayName;
     p.plannedStart = plannedStart;
     p.plannedEnd = plannedEnd;
-    p.notes = notes;
+    const kept = splitProjectNotes(p.notes);
+    p.notes = joinProjectNotes(notes, kept.quotationNumber, kept.invoiceNumber);
     p.status = status;
     p.updatedAt = new Date().toISOString();
   });

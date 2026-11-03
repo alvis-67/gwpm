@@ -36,7 +36,7 @@ export function ProgressItem({
   }
 
   function askRemove() {
-    if (!window.confirm(`向右移除此工程進度「${title}」？`)) return false;
+    if (!window.confirm(`向左移除此工程進度「${title}」？`)) return false;
     return window.confirm(`再次確認：刪除「${title}」後不能復原。`);
   }
 
@@ -57,7 +57,7 @@ export function ProgressItem({
         <span
           aria-hidden
           className="text-sm"
-          style={{ position: "absolute", left: 16, color: "var(--color-danger)" }}
+          style={{ position: "absolute", right: 16, color: "var(--color-danger)" }}
         >
           鬆開以移除
         </span>
@@ -71,13 +71,13 @@ export function ProgressItem({
         }}
         onDragStart={(event) => event.preventDefault()}
         onPointerDown={(event) => {
-          if (!canRemove || (event.target as HTMLElement).closest("button")) return;
+          if (!canRemove) return;
           startX.current = event.clientX;
           const move = (ev: PointerEvent) => {
             if (startX.current == null) return;
-            const next = Math.max(0, Math.min(112, ev.clientX - startX.current));
-            if (next > 8) dragged.current = true;
-            setOffset(next);
+            const raw = ev.clientX - startX.current;
+            if (Math.abs(raw) > 8) dragged.current = true;
+            setOffset(Math.min(0, Math.max(-112, raw)));
           };
           const end = (ev: PointerEvent) => {
             window.removeEventListener("pointermove", move);
@@ -86,13 +86,13 @@ export function ProgressItem({
             if (startX.current == null) return;
             const moved = dxRef.current;
             startX.current = null;
-            if (moved > 8) {
+            if (moved < -8) {
               dragged.current = true;
               window.setTimeout(() => {
                 dragged.current = false;
               }, 600);
             }
-            if (ev.type === "pointercancel" || moved <= 72) setOffset(0);
+            if (ev.type === "pointercancel" || moved > -72) setOffset(0);
             else submitRemove();
           };
           window.addEventListener("pointermove", move);
@@ -105,7 +105,7 @@ export function ProgressItem({
           draggable={false}
           className="list-row-main"
           onClick={(event) => {
-            if (dragged.current || dxRef.current > 8) {
+            if (dragged.current || dxRef.current < -8) {
               event.preventDefault();
               dragged.current = false;
             }
@@ -119,11 +119,6 @@ export function ProgressItem({
             {blocked && <span style={{ color: "var(--color-danger)" }}>受阻</span>}
           </div>
         </a>
-        {canRemove && (
-          <button type="button" className="btn btn-danger" onClick={submitRemove}>
-            移除
-          </button>
-        )}
       </div>
     </div>
   );

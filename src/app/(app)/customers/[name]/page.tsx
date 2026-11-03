@@ -76,7 +76,7 @@ export default async function CustomerDetailPage({
       </header>
       <p className="secondary text-sm mb-4">報價編號與發票編號</p>
       {ordered.length === 0 ? (
-        <div className="empty">尚未填寫報價或發票編號。可在工程案編輯頁加入。</div>
+        <div className="empty">尚未填寫報價或發票編號。</div>
       ) : (
         <div className="list">
           {ordered.map((row) => (

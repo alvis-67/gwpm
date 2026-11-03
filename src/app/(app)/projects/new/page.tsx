@@ -12,7 +12,7 @@ export default async function NewProjectPage() {
   return (
     <div className="page">
       <header className="page-header">
-        <h1 className="page-title">建立工程案</h1>
+        <h1 className="page-title">建立新工程</h1>
       </header>
       <form action={createProjectAction}>
         {admin && data && (
@@ -41,14 +41,6 @@ export default async function NewProjectPage() {
         <div className="field">
           <label htmlFor="clientDisplayName">客戶顯示名稱</label>
           <input id="clientDisplayName" name="clientDisplayName" />
-        </div>
-        <div className="field">
-          <label htmlFor="quotationNumber">報價編號</label>
-          <input id="quotationNumber" name="quotationNumber" />
-        </div>
-        <div className="field">
-          <label htmlFor="invoiceNumber">發票編號</label>
-          <input id="invoiceNumber" name="invoiceNumber" />
         </div>
         <div className="field">
           <label htmlFor="plannedStart">計劃開始</label>
