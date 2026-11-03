@@ -1,13 +1,19 @@
 import { redirect } from "next/navigation";
 import { createProjectAction } from "@/actions/projects";
+import { ProjectNameField } from "@/components/ProjectNameField";
 import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
+import { visibleProjects } from "@/lib/permissions";
+import { projectNameOptions } from "@/lib/project-names";
 import { readData } from "@/lib/store";
 
 export default async function NewProjectPage() {
   const user = await requireSession();
   if (!canManageProjects(user)) redirect("/projects");
   const admin = isAdmin(user);
-  const data = admin ? await readData() : null;
+  const data = await readData();
+  const nameOptions = projectNameOptions(
+    visibleProjects(data, user).map((project) => project.name),
+  );
 
   return (
     <div className="page">
@@ -30,17 +36,22 @@ export default async function NewProjectPage() {
             </select>
           </div>
         )}
+        <ProjectNameField options={nameOptions} />
         <div className="field">
-          <label htmlFor="name">工程案名稱（必填）</label>
-          <input id="name" name="name" required />
-        </div>
-        <div className="field">
-          <label htmlFor="location">地點</label>
+          <label htmlFor="location">工作地點</label>
           <input id="location" name="location" />
         </div>
         <div className="field">
           <label htmlFor="clientDisplayName">客戶顯示名稱</label>
           <input id="clientDisplayName" name="clientDisplayName" />
+        </div>
+        <div className="field">
+          <label htmlFor="quotationNumber">報價編號</label>
+          <input id="quotationNumber" name="quotationNumber" />
+        </div>
+        <div className="field">
+          <label htmlFor="invoiceNumber">發票編號</label>
+          <input id="invoiceNumber" name="invoiceNumber" />
         </div>
         <div className="field">
           <label htmlFor="plannedStart">計劃開始</label>

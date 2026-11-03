@@ -41,6 +41,7 @@ export const procurementStatusLabel: Record<ProcurementStatus, string> = {
 
 export const navItems = [
   { href: "/projects", label: "工程", icon: "projects" },
+  { href: "/customers", label: "客戶", icon: "customers" },
   { href: "/today", label: "今日", icon: "today" },
   { href: "/notifications", label: "通知", icon: "notifications" },
   { href: "/me", label: "我的", icon: "me" },

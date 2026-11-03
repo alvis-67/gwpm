@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addTradeAction } from "@/actions/projects";
+import { addTradeAction, deleteProjectAction } from "@/actions/projects";
+import { ConfirmTwiceButton } from "@/components/ConfirmTwiceButton";
 import { DependencyBanner } from "@/components/DependencyBanner";
+import { ProgressItem } from "@/components/ProgressItem";
 import { TradeStatusChip, ProjectStatusChip } from "@/components/StatusChip";
 import { canManageProjects, requireSession } from "@/lib/auth";
 import { formatDateTimeZh, formatDateZh } from "@/lib/dates";
@@ -11,6 +13,7 @@ import {
   canAccessProject,
   visibleTradesForProject,
 } from "@/lib/permissions";
+import { customerPath, splitProjectNotes } from "@/lib/project-docs";
 import { readData } from "@/lib/store";
 import { tradeStatusLabel } from "@/lib/labels";
 import { DEFAULT_TRADE_TEMPLATES } from "@/lib/types";
@@ -27,6 +30,7 @@ export default async function ProjectOverviewPage({
   const project = data.projects.find((p) => p.id === id);
   if (!project) notFound();
   const owner = canManageProjects(user);
+  const docs = splitProjectNotes(project.notes);
   const trades = visibleTradesForProject(data, user, id);
   const blocked = owner ? projectBlockedTrades(data, id) : [];
   const completed = trades.filter((t) => t.status === "completed").length;
@@ -53,7 +57,14 @@ export default async function ProjectOverviewPage({
           <h1 className="page-title">{project.name}</h1>
           <div className="list-row-meta mt-2">
             <ProjectStatusChip status={project.status} />
-            <span>{project.location || "地點未填"}</span>
+            <span>工作地點：{project.location || "未填"}</span>
+            {project.clientDisplayName ? (
+              <Link href={customerPath(project.clientDisplayName)}>
+                {project.clientDisplayName}
+              </Link>
+            ) : null}
+            {docs.quotationNumber ? <span>報價 {docs.quotationNumber}</span> : null}
+            {docs.invoiceNumber ? <span>發票 {docs.invoiceNumber}</span> : null}
           </div>
         </div>
         {owner && (
@@ -87,7 +98,7 @@ export default async function ProjectOverviewPage({
         </section>
       )}
 
-      <h2 className="section-title">工種進度</h2>
+      <h2 className="section-title">工程進度</h2>
       <p className="secondary text-sm mb-2">
         完成 {completed}/{trades.length}（{progress}%）
       </p>
@@ -99,22 +110,17 @@ export default async function ProjectOverviewPage({
           const assignee = data.users.find((u) => u.id === trade.assigneeUserId);
           const hint = evaluateDependency(data, trade);
           return (
-            <Link
+            <ProgressItem
               key={trade.id}
               href={`/projects/${id}/trades/${trade.id}`}
-              className="list-row"
-            >
-              <div className="list-row-main">
-                <h3 className="list-row-title">{trade.name}</h3>
-                <div className="list-row-meta">
-                  <TradeStatusChip status={trade.status} />
-                  <span>{assignee ? formatLeadLabel(assignee) : "未指派"}</span>
-                  <span className="font-mono">{formatDateZh(trade.plannedStart)}</span>
-                  {hint.kind === "blocked" && <span style={{ color: "var(--color-danger)" }}>受阻</span>}
-                </div>
-              </div>
-              <span className="muted">›</span>
-            </Link>
+              title={trade.name}
+              status={trade.status}
+              assignee={assignee ? formatLeadLabel(assignee) : "未指派"}
+              date={formatDateZh(trade.plannedStart)}
+              blocked={hint.kind === "blocked"}
+              tradeId={trade.id}
+              canRemove={owner}
+            />
           );
         })}
       </div>
@@ -186,6 +192,22 @@ export default async function ProjectOverviewPage({
           您僅可檢視自己負責的工種。狀態說明：
           {Object.values(tradeStatusLabel).join("／")}
         </p>
+      )}
+
+      {owner && (
+        <section className="mt-8">
+          <h2 className="section-title">刪除工程</h2>
+          <p className="secondary text-sm mb-3">
+            只有管理員和工程公司老闆可以刪除，而且要確認兩次。
+          </p>
+          <ConfirmTwiceButton
+            action={deleteProjectAction}
+            fields={{ projectId: id }}
+            label="刪除工程"
+            first={`刪除工程「${project.name}」？`}
+            second="再次確認：刪除後不能復原。確定刪除？"
+          />
+        </section>
       )}
     </div>
   );

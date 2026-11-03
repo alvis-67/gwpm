@@ -24,6 +24,15 @@ function Icon({ name, active }: { name: string; active: boolean }) {
           <path d="M3 9h18" />
         </svg>
       );
+    case "customers":
+      return (
+        <svg {...common}>
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3.5 19c.8-3 10.2-3 11 0" />
+          <circle cx="17" cy="9" r="2" />
+          <path d="M16 19c.4-2 4.8-2.6 5.5-1" />
+        </svg>
+      );
     case "today":
       return (
         <svg {...common}>

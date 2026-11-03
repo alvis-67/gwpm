@@ -5,6 +5,7 @@ import {
   ADMIN_PASSWORD_HASH,
   ADMIN_USER_ID,
 } from "./admin-account";
+import { joinProjectNotes } from "./project-docs";
 import type { AppData } from "./types";
 import { createId } from "./ids";
 
@@ -141,7 +142,7 @@ export async function buildSeedData(): Promise<AppData> {
         status: "active",
         plannedStart: d(-14),
         plannedEnd: d(21),
-        notes: "Infunity 示範工程案",
+        notes: joinProjectNotes("Infunity 示範工程案", "Q-1008", "INV-2201"),
         createdAt: now,
         updatedAt: now,
       },
@@ -150,11 +151,11 @@ export async function buildSeedData(): Promise<AppData> {
         orgId: infunityOrgId,
         name: "觀塘辦公室裝修",
         location: "觀塘開源道",
-        clientDisplayName: "Infunity 內部",
+        clientDisplayName: "張先生",
         status: "planning",
         plannedStart: d(10),
         plannedEnd: d(45),
-        notes: "",
+        notes: joinProjectNotes("", "Q-1002", "INV-2190"),
         createdAt: now,
         updatedAt: now,
       },

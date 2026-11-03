@@ -6,6 +6,7 @@ import {
   renameTradeAction,
   updateTradeScheduleAction,
 } from "@/actions/projects";
+import { ConfirmTwiceButton } from "@/components/ConfirmTwiceButton";
 import { DependencyBanner } from "@/components/DependencyBanner";
 import { TradeStatusControl } from "@/components/TradeStatusControl";
 import { ProcurementStatusChip } from "@/components/StatusChip";
@@ -188,13 +189,16 @@ export default async function TradeDetailPage({
       </div>
 
       {owner && (
-        <form action={deleteTradeAction} className="mt-8">
-          <input type="hidden" name="tradeId" value={trade.id} />
-          <button type="submit" className="btn btn-danger">
-            刪除此工種
-          </button>
+        <div className="mt-8">
+          <ConfirmTwiceButton
+            action={deleteTradeAction}
+            fields={{ tradeId: trade.id }}
+            label="刪除此工種"
+            first={`刪除此工種「${trade.name}」？`}
+            second={`再次確認：刪除「${trade.name}」後不能復原。`}
+          />
           <p className="muted text-xs mt-2">會一併移除相關依賴、日誌與留言（採購改為案級）。</p>
-        </form>
+        </div>
       )}
     </div>
   );

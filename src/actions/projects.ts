@@ -6,19 +6,35 @@ import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
 import { managedProject } from "@/lib/permissions";
 import { updateData } from "@/lib/store";
+import { joinProjectNotes } from "@/lib/project-docs";
 import { DEFAULT_TRADE_TEMPLATES, type ProjectStatus } from "@/lib/types";
 import { pushNotification } from "@/lib/notifications";
+
+function readProjectName(formData: FormData): string {
+  const choice = String(formData.get("nameChoice") || "").trim();
+  const custom = String(formData.get("customName") || "").trim();
+  if (choice === "__new__") return custom;
+  return choice;
+}
+
+function readProjectNotes(formData: FormData): string {
+  return joinProjectNotes(
+    String(formData.get("notes") || ""),
+    String(formData.get("quotationNumber") || ""),
+    String(formData.get("invoiceNumber") || ""),
+  );
+}
 
 export async function createProjectAction(formData: FormData) {
   const user = await requireSession();
   if (!canManageProjects(user)) throw new Error("無權限");
 
-  const name = String(formData.get("name") || "").trim();
+  const name = readProjectName(formData);
   const location = String(formData.get("location") || "").trim();
   const clientDisplayName = String(formData.get("clientDisplayName") || "").trim();
   const plannedStart = String(formData.get("plannedStart") || "");
   const plannedEnd = String(formData.get("plannedEnd") || "");
-  const notes = String(formData.get("notes") || "");
+  const notes = readProjectNotes(formData);
   const withTemplates = formData.get("withTemplates") === "on";
 
   if (!name) throw new Error("工程案名稱（必填）");
@@ -67,6 +83,7 @@ export async function createProjectAction(formData: FormData) {
   });
 
   revalidatePath("/projects");
+  revalidatePath("/customers", "layout");
   redirect(`/projects/${projectId}`);
 }
 
@@ -90,13 +107,13 @@ export async function updateProjectAction(formData: FormData) {
   const user = await requireSession();
   if (!canManageProjects(user)) throw new Error("無權限");
   const projectId = String(formData.get("projectId") || "");
-  const name = String(formData.get("name") || "").trim();
+  const name = readProjectName(formData);
   if (!name) throw new Error("工程案名稱（必填）");
   const location = String(formData.get("location") || "").trim();
   const clientDisplayName = String(formData.get("clientDisplayName") || "").trim();
   const plannedStart = String(formData.get("plannedStart") || "");
   const plannedEnd = String(formData.get("plannedEnd") || "");
-  const notes = String(formData.get("notes") || "");
+  const notes = readProjectNotes(formData);
   const status = String(formData.get("status") || "planning") as ProjectStatus;
 
   await updateData((data) => {
@@ -113,7 +130,41 @@ export async function updateProjectAction(formData: FormData) {
   });
 
   revalidatePath("/projects");
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/customers", "layout");
   redirect(`/projects/${projectId}`);
+}
+
+export async function deleteProjectAction(formData: FormData) {
+  const user = await requireSession();
+  if (!canManageProjects(user)) throw new Error("無權限");
+  const projectId = String(formData.get("projectId") || "");
+  await updateData((data) => {
+    const project = managedProject(data, user, projectId);
+    if (!project) throw new Error("無權限");
+    const tradeIds = new Set(
+      data.trades.filter((trade) => trade.projectId === projectId).map((trade) => trade.id),
+    );
+    const logIds = new Set(
+      data.workLogs.filter((log) => tradeIds.has(log.projectTradeId)).map((log) => log.id),
+    );
+    data.projects = data.projects.filter((item) => item.id !== projectId);
+    data.trades = data.trades.filter((trade) => trade.projectId !== projectId);
+    data.dependencies = data.dependencies.filter((item) => item.projectId !== projectId);
+    data.procurements = data.procurements.filter((item) => item.projectId !== projectId);
+    data.workLogs = data.workLogs.filter((log) => !tradeIds.has(log.projectTradeId));
+    data.photos = data.photos.filter((photo) => !logIds.has(photo.workLogId));
+    data.comments = data.comments.filter((comment) => !tradeIds.has(comment.projectTradeId));
+    data.notifications = data.notifications.filter(
+      (item) =>
+        item.entityId !== projectId &&
+        !tradeIds.has(item.entityId) &&
+        !item.href.startsWith(`/projects/${projectId}`),
+    );
+  });
+  revalidatePath("/projects");
+  revalidatePath("/customers", "layout");
+  redirect("/projects");
 }
 
 export async function renameTradeAction(formData: FormData) {

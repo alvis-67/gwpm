@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { updateProjectAction } from "@/actions/projects";
+import { ProjectNameField } from "@/components/ProjectNameField";
 import { canManageProjects, requireSession } from "@/lib/auth";
 import { projectStatusLabel } from "@/lib/labels";
-import { canAccessProject } from "@/lib/permissions";
+import { canAccessProject, visibleProjects } from "@/lib/permissions";
+import { splitProjectNotes } from "@/lib/project-docs";
+import { projectNameOptions } from "@/lib/project-names";
 import { readData } from "@/lib/store";
 import { PROJECT_STATUSES } from "@/lib/types";
 
@@ -19,6 +22,11 @@ export default async function EditProjectPage({
   if (!canAccessProject(data, user, id)) notFound();
   const project = data.projects.find((p) => p.id === id);
   if (!project) notFound();
+  const docs = splitProjectNotes(project.notes);
+  const nameOptions = projectNameOptions(
+    visibleProjects(data, user).map((item) => item.name),
+    project.name,
+  );
 
   return (
     <div className="page">
@@ -29,12 +37,9 @@ export default async function EditProjectPage({
 
       <form action={updateProjectAction}>
         <input type="hidden" name="projectId" value={id} />
+        <ProjectNameField options={nameOptions} defaultName={project.name} />
         <div className="field">
-          <label htmlFor="name">工程案名稱（必填）</label>
-          <input id="name" name="name" required defaultValue={project.name} />
-        </div>
-        <div className="field">
-          <label htmlFor="location">地點</label>
+          <label htmlFor="location">工作地點</label>
           <input id="location" name="location" defaultValue={project.location} />
         </div>
         <div className="field">
@@ -43,6 +48,22 @@ export default async function EditProjectPage({
             id="clientDisplayName"
             name="clientDisplayName"
             defaultValue={project.clientDisplayName}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="quotationNumber">報價編號</label>
+          <input
+            id="quotationNumber"
+            name="quotationNumber"
+            defaultValue={docs.quotationNumber}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="invoiceNumber">發票編號</label>
+          <input
+            id="invoiceNumber"
+            name="invoiceNumber"
+            defaultValue={docs.invoiceNumber}
           />
         </div>
         <div className="field">
@@ -77,7 +98,7 @@ export default async function EditProjectPage({
         </div>
         <div className="field">
           <label htmlFor="notes">備註</label>
-          <textarea id="notes" name="notes" defaultValue={project.notes} />
+          <textarea id="notes" name="notes" defaultValue={docs.text} />
         </div>
         <button type="submit" className="btn btn-primary btn-block md:max-w-xs">
           儲存
