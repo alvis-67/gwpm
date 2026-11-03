@@ -5,9 +5,9 @@ import {
   deleteDependencyAction,
 } from "@/actions/projects";
 import { SubmitButton } from "@/components/SubmitButton";
-import { canManageProjects, requireSession } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { tradeStatusLabel } from "@/lib/labels";
-import { canAccessProject } from "@/lib/permissions";
+import { canAccessProject, canLeadProject } from "@/lib/permissions";
 import { readData } from "@/lib/store";
 import { TRADE_STATUSES } from "@/lib/types";
 
@@ -18,8 +18,8 @@ export default async function DependenciesPage({
 }) {
   const { id } = await params;
   const user = await requireSession();
-  if (!canManageProjects(user)) redirect(`/projects/${id}`);
   const data = await readData();
+  if (!canLeadProject(data, user, id)) redirect(`/projects/${id}`);
   if (!canAccessProject(data, user, id)) notFound();
   const project = data.projects.find((p) => p.id === id);
   if (!project) notFound();

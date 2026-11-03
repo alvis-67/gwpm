@@ -6,10 +6,11 @@ import {
 } from "@/actions/procurement";
 import { ProcurementStatusChip } from "@/components/StatusChip";
 import { SubmitButton } from "@/components/SubmitButton";
-import { canManageProjects, requireSession } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { procurementStatusLabel } from "@/lib/labels";
 import {
   canAccessProject,
+  canLeadProject,
   canReportProcurement,
   visibleTradesForProject,
 } from "@/lib/permissions";
@@ -27,13 +28,13 @@ export default async function ProcurementPage({
   if (!canAccessProject(data, user, id)) notFound();
   const project = data.projects.find((p) => p.id === id);
   if (!project) notFound();
-  const owner = canManageProjects(user);
+  const leader = canLeadProject(data, user, id);
   const trades = visibleTradesForProject(data, user, id);
   const tradeIds = new Set(trades.map((t) => t.id));
 
   const items = data.procurements.filter((p) => {
     if (p.projectId !== id) return false;
-    if (owner) return true;
+    if (leader) return true;
     return p.tradeId && tradeIds.has(p.tradeId);
   });
 
@@ -48,7 +49,7 @@ export default async function ProcurementPage({
         {items.length === 0 && <div className="empty">尚無採購項目</div>}
         {items.map((item) => {
           const trade = data.trades.find((t) => t.id === item.tradeId);
-          const canReport = canReportProcurement(data, user, item.tradeId);
+          const canReport = leader || canReportProcurement(data, user, item.tradeId);
           return (
             <div key={item.id} className="list-row" style={{ alignItems: "flex-start" }}>
               <div className="list-row-main">
@@ -71,7 +72,7 @@ export default async function ProcurementPage({
                       defaultValue={item.status}
                       className="min-h-11 px-2 border border-[var(--color-border)] rounded-[var(--radius-sm)]"
                     >
-                      {(owner
+                      {(leader
                         ? PROCUREMENT_STATUSES
                         : (["received", "shortage"] as const)
                       ).map((s) => (
@@ -89,7 +90,7 @@ export default async function ProcurementPage({
         })}
       </div>
 
-      {owner && (
+      {leader && (
         <>
           <h2 className="section-title">新增採購</h2>
           <form action={createProcurementAction}>

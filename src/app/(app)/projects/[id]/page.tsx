@@ -13,6 +13,7 @@ import { evaluateDependency, projectBlockedTrades } from "@/lib/dependencies";
 import { formatLeadLabel } from "@/lib/format";
 import {
   canAccessProject,
+  canLeadProject,
   visibleProjects,
   visibleTradesForProject,
 } from "@/lib/permissions";
@@ -32,23 +33,23 @@ export default async function ProjectOverviewPage({
   if (!canAccessProject(data, user, id)) notFound();
   const project = data.projects.find((p) => p.id === id);
   if (!project) notFound();
-  const owner = canManageProjects(user);
+  const leader = canLeadProject(data, user, id);
+  const manager = canManageProjects(user);
   const visibleIds = new Set(visibleProjects(data, user).map((item) => item.id));
   const tradeOptions = tradeNameOptions(
     data.trades.filter((trade) => visibleIds.has(trade.projectId)).map((trade) => trade.name),
   );
   const docs = splitProjectNotes(project.notes);
   const trades = visibleTradesForProject(data, user, id);
-  const blocked = owner ? projectBlockedTrades(data, id) : [];
+  const blocked = leader ? projectBlockedTrades(data, id) : [];
   const completed = trades.filter((t) => t.status === "completed").length;
   const progress = trades.length ? Math.round((completed / trades.length) * 100) : 0;
 
   const recentLogs = data.workLogs
-    .filter((l) => trades.some((t) => t.id === l.projectTradeId) || (owner && data.trades.some((t) => t.id === l.projectTradeId && t.projectId === id)))
+    .filter((l) => trades.some((t) => t.id === l.projectTradeId) || (leader && data.trades.some((t) => t.id === l.projectTradeId && t.projectId === id)))
     .slice(0, 5);
 
-  // For owner show all project logs; for lead already filtered via trades
-  const logs = owner
+  const logs = leader
     ? data.workLogs
         .filter((l) =>
           data.trades.some((t) => t.id === l.projectTradeId && t.projectId === id),
@@ -74,7 +75,7 @@ export default async function ProjectOverviewPage({
             {docs.invoiceNumber ? <span>發票 {docs.invoiceNumber}</span> : null}
           </div>
         </div>
-        {owner && (
+        {leader && (
           <Link href={`/projects/${id}/edit`} className="btn btn-secondary">
             編輯
           </Link>
@@ -126,13 +127,13 @@ export default async function ProjectOverviewPage({
               date={formatDateZh(trade.plannedStart)}
               blocked={hint.kind === "blocked"}
               tradeId={trade.id}
-              canRemove={owner}
+              canRemove={leader}
             />
           );
         })}
       </div>
 
-      {owner && (
+      {leader && (
         <>
           <h2 className="section-title">新增工種</h2>
           <p className="secondary text-sm mb-3">
@@ -181,9 +182,9 @@ export default async function ProjectOverviewPage({
       <div className="link-row">
         <Link href={`/projects/${id}/schedule`}>排程</Link>
         <Link href={`/projects/${id}/procurement`}>採購</Link>
-        {owner && <Link href={`/projects/${id}/dependencies`}>依賴設定</Link>}
-        {owner && <Link href={`/projects/${id}/report`}>匯出報告</Link>}
-        {owner && <Link href="/partners">工程公司／負責人</Link>}
+        {leader && <Link href={`/projects/${id}/dependencies`}>依賴設定</Link>}
+        {leader && <Link href={`/projects/${id}/report`}>匯出報告</Link>}
+        {manager && <Link href="/partners">工程公司／負責人</Link>}
       </div>
 
       <h2 className="section-title">近期動態</h2>
@@ -209,18 +210,18 @@ export default async function ProjectOverviewPage({
         </div>
       )}
 
-      {!owner && (
+      {!leader && (
         <p className="muted text-sm mt-4">
           您僅可檢視自己負責的工種。狀態說明：
           {Object.values(tradeStatusLabel).join("／")}
         </p>
       )}
 
-      {owner && (
+      {leader && (
         <section className="mt-8">
           <h2 className="section-title">刪除工程</h2>
           <p className="secondary text-sm mb-3">
-            只有管理員和工程公司老闆可以刪除，而且要確認兩次。
+            只有此工程的 Leader 和管理員可以刪除，而且要確認兩次。
           </p>
           <ConfirmTwiceButton
             action={deleteProjectAction}

@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { TradeStatusChip } from "@/components/StatusChip";
 import { DependencyBanner } from "@/components/DependencyBanner";
-import { canManageProjects, requireSession } from "@/lib/auth";
+import { isAdmin, requireSession } from "@/lib/auth";
 import { formatDateZh, todayISO, tomorrowISO } from "@/lib/dates";
 import { evaluateDependency } from "@/lib/dependencies";
-import { visibleProjects, visibleTradesForProject } from "@/lib/permissions";
+import { isProjectLeader, visibleProjects, visibleTradesForProject } from "@/lib/permissions";
 import { readData } from "@/lib/store";
 import { formatLeadLabel } from "@/lib/format";
 import { buildTomorrowEntryMessage, buildWhatsAppUrl } from "@/lib/whatsapp";
@@ -12,11 +12,13 @@ import { buildTomorrowEntryMessage, buildWhatsAppUrl } from "@/lib/whatsapp";
 export default async function TodayPage() {
   const user = await requireSession();
   const data = await readData();
-  const owner = canManageProjects(user);
   const today = todayISO();
   const tomorrow = tomorrowISO();
 
   const projects = visibleProjects(data, user);
+  const ledProjects = isAdmin(user)
+    ? projects
+    : projects.filter((project) => isProjectLeader(user, project));
   const myTrades = projects.flatMap((p) =>
     visibleTradesForProject(data, user, p.id).map((t) => ({ project: p, trade: t })),
   );
@@ -28,15 +30,15 @@ export default async function TodayPage() {
       x.trade.status === "ready",
   );
 
-  const tomorrowEntries = owner
+  const tomorrowEntries = ledProjects.length
     ? data.trades
         .filter(
           (t) =>
             t.plannedStart === tomorrow &&
-            projects.some((p) => p.id === t.projectId),
+            ledProjects.some((p) => p.id === t.projectId),
         )
         .map((trade) => {
-          const project = projects.find((p) => p.id === trade.projectId)!;
+          const project = ledProjects.find((p) => p.id === trade.projectId)!;
           const assignee = data.users.find((u) => u.id === trade.assigneeUserId);
           const hint = evaluateDependency(data, trade);
           const message = buildTomorrowEntryMessage({
@@ -62,7 +64,7 @@ export default async function TodayPage() {
       </header>
 
       <h2 className="section-title" style={{ marginTop: 0 }}>
-        {owner ? "協調待辦／進行中" : "我的工種待辦"}
+        {ledProjects.length > 0 ? "協調待辦／進行中" : "我的工種待辦"}
       </h2>
       <div className="list">
         {todayItems.length === 0 && <div className="empty">今日無待辦工種</div>}
@@ -88,7 +90,7 @@ export default async function TodayPage() {
         })}
       </div>
 
-      {owner && (
+      {ledProjects.length > 0 && (
         <>
           <h2 className="section-title">明日進場提醒</h2>
           <p className="secondary text-sm mb-3 font-mono">進場日：{tomorrow}</p>

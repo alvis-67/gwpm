@@ -106,7 +106,7 @@ export function isOwner(user: { roleDefault: Role }): boolean {
   return user.roleDefault === "owner";
 }
 
-/** Project management for a company. Admins can do this for every company. */
+/** Company account tasks, such as creating a project or a partner. Level-2 on a project is that project's Leader. */
 export function canManageProjects(user: { roleDefault: Role }): boolean {
   return isAdmin(user) || isOwner(user);
 }

@@ -3,10 +3,10 @@ import { notFound, redirect } from "next/navigation";
 import { PrintButton } from "@/components/PrintButton";
 import { SubmitButton } from "@/components/SubmitButton";
 import { TradeStatusChip } from "@/components/StatusChip";
-import { canManageProjects, requireSession } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { formatDateTimeZh, formatDateZh } from "@/lib/dates";
 import { PRODUCT_NAME, projectStatusLabel, tradeStatusLabel } from "@/lib/labels";
-import { canAccessProject } from "@/lib/permissions";
+import { canAccessProject, canLeadProject } from "@/lib/permissions";
 import { readData } from "@/lib/store";
 
 export default async function ReportPage({
@@ -19,8 +19,8 @@ export default async function ReportPage({
   const { id } = await params;
   const sp = await searchParams;
   const user = await requireSession();
-  if (!canManageProjects(user)) redirect(`/projects/${id}`);
   const data = await readData();
+  if (!canLeadProject(data, user, id)) redirect(`/projects/${id}`);
   if (!canAccessProject(data, user, id)) notFound();
   const project = data.projects.find((p) => p.id === id);
   if (!project) notFound();

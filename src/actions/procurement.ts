@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canManageProjects, requireSession } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
 import { pushNotification } from "@/lib/notifications";
-import { canReportProcurement, inCompany, managedProject } from "@/lib/permissions";
+import { canLeadProject, canReportProcurement, managedProject, projectLeaderId } from "@/lib/permissions";
 import { updateData } from "@/lib/store";
 import {
   PROCUREMENT_STATUSES,
@@ -14,7 +14,6 @@ import { procurementStatusLabel } from "@/lib/labels";
 
 export async function createProcurementAction(formData: FormData) {
   const user = await requireSession();
-  if (!canManageProjects(user)) throw new Error("無權限");
   const projectId = String(formData.get("projectId") || "");
   const name = String(formData.get("name") || "").trim();
   if (!name) throw new Error("採購項目名稱（必填）");
@@ -52,24 +51,26 @@ export async function updateProcurementStatusAction(formData: FormData) {
   await updateData((data) => {
     const item = data.procurements.find((p) => p.id === id);
     if (!item) throw new Error("找不到採購項目");
-    if (!canReportProcurement(data, user, item.tradeId)) {
+    const project = data.projects.find((p) => p.id === item.projectId);
+    if (!project) throw new Error("無權限");
+    const leader = canLeadProject(data, user, project.id);
+    if (!leader && !canReportProcurement(data, user, item.tradeId)) {
       throw new Error("無權限");
     }
-    // Trade leads can only report received / shortage
-    if (!canManageProjects(user) && status !== "received" && status !== "shortage") {
+    if (!leader && status !== "received" && status !== "shortage") {
       throw new Error("項目成員僅可回報已到或缺料");
     }
     item.status = status;
     item.updatedAt = new Date().toISOString();
 
-    const project = data.projects.find((p) => p.id === item.projectId);
-    if (!project || !inCompany(user, project.orgId)) throw new Error("無權限");
-    for (const owner of data.users.filter(
-      (u) => u.roleDefault === "owner" && u.orgId === project.orgId,
-    )) {
-      if (owner.id === user.id) continue;
+    const leaderId = projectLeaderId(project);
+    const recipients = leaderId
+      ? data.users.filter((u) => u.id === leaderId)
+      : data.users.filter((u) => u.roleDefault === "owner" && u.orgId === project.orgId);
+    for (const recipient of recipients) {
+      if (recipient.id === user.id) continue;
       pushNotification(data, {
-        userId: owner.id,
+        userId: recipient.id,
         type: "procurement",
         title: "採購狀態更新",
         body: `${project.name}｜${item.name} → ${procurementStatusLabel[status]}`,

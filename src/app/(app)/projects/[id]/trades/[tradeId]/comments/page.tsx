@@ -4,7 +4,7 @@ import { addCommentAction } from "@/actions/trades";
 import { SubmitButton } from "@/components/SubmitButton";
 import { requireSession } from "@/lib/auth";
 import { formatDateTimeZh } from "@/lib/dates";
-import { canAccessTrade } from "@/lib/permissions";
+import { canAccessTrade, canEditTrade } from "@/lib/permissions";
 import { readData } from "@/lib/store";
 
 export default async function TradeCommentsPage({
@@ -53,14 +53,16 @@ export default async function TradeCommentsPage({
         })}
       </div>
 
-      <form action={addCommentAction} className="sticky bottom-20 md:bottom-4 bg-[var(--color-bg)] pt-2">
-        <input type="hidden" name="tradeId" value={tradeId} />
-        <div className="field">
-          <label htmlFor="body">留言（必填）</label>
-          <textarea id="body" name="body" required placeholder="輸入留言…" />
-        </div>
-        <SubmitButton label="送出" className="btn btn-primary btn-block md:max-w-xs" />
-      </form>
+      {canEditTrade(data, user, trade) ? (
+        <form action={addCommentAction} className="sticky bottom-20 md:bottom-4 bg-[var(--color-bg)] pt-2">
+          <input type="hidden" name="tradeId" value={tradeId} />
+          <div className="field">
+            <label htmlFor="body">留言（必填）</label>
+            <textarea id="body" name="body" required placeholder="輸入留言…" />
+          </div>
+          <SubmitButton label="送出" className="btn btn-primary btn-block md:max-w-xs" />
+        </form>
+      ) : null}
     </div>
   );
 }

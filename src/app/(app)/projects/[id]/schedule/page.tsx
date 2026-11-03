@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TradeStatusChip } from "@/components/StatusChip";
-import { canManageProjects, requireSession } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { formatDateZh, todayISO, tomorrowISO } from "@/lib/dates";
 import { evaluateDependency } from "@/lib/dependencies";
-import { canAccessProject, visibleTradesForProject } from "@/lib/permissions";
+import { canAccessProject, canLeadProject, visibleTradesForProject } from "@/lib/permissions";
 import { readData } from "@/lib/store";
 
 function groupLabel(date: string): string {
@@ -45,7 +45,7 @@ export default async function SchedulePage({
       </p>
       <header className="page-header">
         <h1 className="page-title">排程</h1>
-        {canManageProjects(user) && (
+        {canLeadProject(data, user, id) && (
           <Link href={`/projects/${id}/dependencies`} className="btn btn-tertiary">
             依賴設定
           </Link>

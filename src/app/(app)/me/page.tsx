@@ -6,7 +6,7 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { canManageProjects, isAdmin, isOwner, requireSession } from "@/lib/auth";
 import { formatLeadLabel } from "@/lib/format";
 import { PRODUCT_FULL, PRODUCT_NAME, roleLabel } from "@/lib/labels";
-import { getOrganization, orgProjects, projectLeadCandidates } from "@/lib/permissions";
+import { assignableUsers, getOrganization, orgProjects } from "@/lib/permissions";
 import { splitProjectNotes } from "@/lib/project-docs";
 import { persistenceLabel, readData } from "@/lib/store";
 
@@ -19,7 +19,7 @@ export default async function MePage() {
   const org = getOrganization(data, user.orgId);
   const relatedProjects = owner ? orgProjects(data, user.orgId) : [];
   const leadChoices = owner
-    ? projectLeadCandidates(data, user.orgId).map((candidate) => ({
+    ? assignableUsers(data).map((candidate) => ({
         id: candidate.id,
         label: `${formatLeadLabel(candidate)}（${candidate.phoneE164 || "無電話"}）`,
       }))
@@ -85,9 +85,9 @@ export default async function MePage() {
 
       {owner && (
         <>
-          <h2 className="section-title">工程負責人</h2>
+          <h2 className="section-title">Leader</h2>
           <p className="secondary text-sm mb-3">
-            為相關工程指定負責人。工程公司老闆也可以擔任負責人。
+            為本公司的工程指定 Leader。同一登入可以是這項工程的 Leader，也可以只是其他工程的工種負責人。
           </p>
           {relatedProjects.length === 0 ? (
             <p className="empty">尚無相關工程</p>

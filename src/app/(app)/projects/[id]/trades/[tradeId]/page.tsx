@@ -16,9 +16,11 @@ import { formatDateZh } from "@/lib/dates";
 import { evaluateDependency } from "@/lib/dependencies";
 import { formatLeadLabel } from "@/lib/format";
 import {
+  assignableUsers,
   canAccessProject,
   canAccessTrade,
   canEditTrade,
+  canLeadProject,
 } from "@/lib/permissions";
 import { readData } from "@/lib/store";
 
@@ -47,15 +49,13 @@ export default async function TradeDetailPage({
     );
   }
 
-  const owner = canManageProjects(user);
+  const leader = canLeadProject(data, user, id);
   const canEdit = canEditTrade(data, user, trade);
   const hint = evaluateDependency(data, trade);
   const assignee = data.users.find((u) => u.id === trade.assigneeUserId);
   const procs = data.procurements.filter((p) => p.tradeId === tradeId);
   const shortage = procs.filter((p) => p.status === "shortage").length;
-  const leads = data.users.filter(
-    (u) => u.roleDefault === "trade_lead" && u.orgId === project.orgId,
-  );
+  const leads = assignableUsers(data);
 
   return (
     <div className="page">
@@ -77,7 +77,7 @@ export default async function TradeDetailPage({
         <DependencyBanner hint={hint} />
       </div>
 
-      {owner && (
+      {leader && (
         <>
           <h2 className="section-title">工種名稱</h2>
           <form action={renameTradeAction} className="mb-4">
@@ -108,16 +108,18 @@ export default async function TradeDetailPage({
         {trade.notes && <p className="mt-2 secondary text-sm">{trade.notes}</p>}
       </div>
 
-      {owner && (
+      {leader && (
         <>
           <h2 className="section-title">指派負責人</h2>
-          <p className="secondary text-sm mb-2">
-            找不到公司？先到{" "}
-            <Link href="/partners" className="btn btn-tertiary" style={{ display: "inline", padding: 0, minHeight: 0 }}>
-              工程公司／負責人
-            </Link>{" "}
-            新增。
-          </p>
+          {canManageProjects(user) && (
+            <p className="secondary text-sm mb-2">
+              找不到公司？先到{" "}
+              <Link href="/partners" className="btn btn-tertiary" style={{ display: "inline", padding: 0, minHeight: 0 }}>
+                工程公司／負責人
+              </Link>{" "}
+              新增。
+            </p>
+          )}
           <AssignLeadForm
             tradeId={trade.id}
             assigneeUserId={trade.assigneeUserId}
@@ -176,7 +178,7 @@ export default async function TradeDetailPage({
         <Link href={`/projects/${id}/procurement`}>相關採購</Link>
       </div>
 
-      {owner && (
+      {leader && (
         <div className="mt-8">
           <ConfirmTwiceButton
             action={deleteTradeAction}

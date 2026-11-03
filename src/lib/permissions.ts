@@ -1,4 +1,4 @@
-import { canManageProjects, isAdmin, isOwner, type SessionUser } from "./auth";
+import { isAdmin, isOwner, type SessionUser } from "./auth";
 import { splitProjectNotes } from "./project-docs";
 import type { AppData, Project, ProjectTrade, User } from "./types";
 
@@ -15,19 +15,39 @@ export function inCompany(user: SessionUser, orgId: string): boolean {
   return isAdmin(user) || user.orgId === orgId;
 }
 
+export function projectLeaderId(project: Project): string {
+  return splitProjectNotes(project.notes).leadUserId;
+}
+
+export function isProjectLeader(user: { id: string }, project: Project): boolean {
+  const leaderId = projectLeaderId(project);
+  return leaderId !== "" && leaderId === user.id;
+}
+
+/** Level-2 on this project: the project's Leader, or the system admin. */
+export function canLeadProject(
+  data: AppData,
+  user: SessionUser,
+  projectId: string,
+): boolean {
+  if (isAdmin(user)) return true;
+  const project = data.projects.find((item) => item.id === projectId);
+  return Boolean(project && isProjectLeader(user, project));
+}
+
 export function visibleProjects(data: AppData, user: SessionUser) {
   if (isAdmin(user)) return data.projects;
-  const inOrg = orgProjects(data, user.orgId);
-  if (isOwner(user)) return inOrg;
-  const ids = new Set(
-    data.trades
-      .filter((t) => t.assigneeUserId === user.id)
-      .map((t) => t.projectId),
-  );
-  for (const project of inOrg) {
-    if (splitProjectNotes(project.notes).leadUserId === user.id) ids.add(project.id);
+  const ids = new Set<string>();
+  if (isOwner(user)) {
+    for (const project of orgProjects(data, user.orgId)) ids.add(project.id);
   }
-  return inOrg.filter((p) => ids.has(p.id));
+  for (const trade of data.trades) {
+    if (trade.assigneeUserId === user.id) ids.add(trade.projectId);
+  }
+  for (const project of data.projects) {
+    if (isProjectLeader(user, project)) ids.add(project.id);
+  }
+  return data.projects.filter((project) => ids.has(project.id));
 }
 
 export function canAccessProject(
@@ -35,9 +55,9 @@ export function canAccessProject(
   user: SessionUser,
   projectId: string,
 ): boolean {
-  const project = data.projects.find((p) => p.id === projectId);
-  if (!project || !inCompany(user, project.orgId)) return false;
-  return visibleProjects(data, user).some((p) => p.id === projectId);
+  const project = data.projects.find((item) => item.id === projectId);
+  if (!project) return false;
+  return visibleProjects(data, user).some((item) => item.id === projectId);
 }
 
 export function canAccessTrade(
@@ -45,18 +65,21 @@ export function canAccessTrade(
   user: SessionUser,
   trade: ProjectTrade,
 ): boolean {
-  const project = data.projects.find((p) => p.id === trade.projectId);
-  if (!project || !inCompany(user, project.orgId)) return false;
-  if (canManageProjects(user)) return true;
-  return trade.assigneeUserId === user.id;
+  const project = data.projects.find((item) => item.id === trade.projectId);
+  if (!project) return false;
+  if (canLeadProject(data, user, project.id)) return true;
+  if (trade.assigneeUserId === user.id) return true;
+  return isOwner(user) && project.orgId === user.orgId;
 }
 
+/** Level-2 (this project's Leader or admin) or the one 負責人 of this trade. */
 export function canEditTrade(
   data: AppData,
   user: SessionUser,
   trade: ProjectTrade,
 ): boolean {
-  return canAccessTrade(data, user, trade);
+  if (canLeadProject(data, user, trade.projectId)) return true;
+  return trade.assigneeUserId === user.id;
 }
 
 export function visibleTradesForProject(
@@ -65,29 +88,26 @@ export function visibleTradesForProject(
   projectId: string,
 ) {
   const project = data.projects.find((p) => p.id === projectId);
-  if (!project || !inCompany(user, project.orgId)) return [];
+  if (!project || !canAccessProject(data, user, projectId)) return [];
   const trades = data.trades
     .filter((t) => t.projectId === projectId)
     .sort((a, b) => a.sortOrder - b.sortOrder);
-  if (canManageProjects(user)) return trades;
+  if (canLeadProject(data, user, projectId)) return trades;
   return trades.filter((t) => t.assigneeUserId === user.id);
 }
 
-/** A project this user may manage: any company for admin, own company for an owner. */
+/** Level-2 management of this project: its Leader, or the system admin. */
 export function managedProject(
   data: AppData,
   user: SessionUser,
   projectId: string,
 ): Project | undefined {
-  const project = data.projects.find((p) => p.id === projectId);
-  if (!project || !canManageProjects(user) || !inCompany(user, project.orgId)) {
-    return undefined;
-  }
-  return project;
+  if (!canLeadProject(data, user, projectId)) return undefined;
+  return data.projects.find((project) => project.id === projectId);
 }
 
-export function canManageProcurement(user: SessionUser): boolean {
-  return canManageProjects(user);
+export function canManageProcurement(data: AppData, user: SessionUser, projectId: string): boolean {
+  return canLeadProject(data, user, projectId);
 }
 
 export function canReportProcurement(
@@ -95,26 +115,26 @@ export function canReportProcurement(
   user: SessionUser,
   tradeId: string | null,
 ): boolean {
-  if (canManageProjects(user)) return true;
   if (!tradeId) return false;
   const trade = data.trades.find((t) => t.id === tradeId);
   if (!trade) return false;
-  return canAccessTrade(data, user, trade);
+  if (canLeadProject(data, user, trade.projectId)) return true;
+  return trade.assigneeUserId === user.id;
 }
 
 export function orgTradeLeads(data: AppData, orgId: string): User[] {
   return orgUsers(data, orgId).filter((u) => u.roleDefault === "trade_lead");
 }
 
-/** Trade leads in the company, plus its 工程公司老闆, who can also be the project 負責人. */
-export function projectLeadCandidates(data: AppData, orgId: string): User[] {
-  const users = orgUsers(data, orgId).filter(
-    (user) => user.roleDefault === "owner" || user.roleDefault === "trade_lead",
-  );
-  return users.sort((a, b) => {
-    if (a.roleDefault !== b.roleDefault) return a.roleDefault === "owner" ? -1 : 1;
-    return a.name.localeCompare(b.name, "zh-Hant");
-  });
+/** Anyone who can log in as a company boss or a trade 負責人, in any company. */
+export function assignableUsers(data: AppData): User[] {
+  return data.users
+    .filter((user) => user.roleDefault === "owner" || user.roleDefault === "trade_lead")
+    .sort((a, b) => {
+      const company = a.companyName.localeCompare(b.companyName, "zh-Hant");
+      if (company !== 0) return company;
+      return a.name.localeCompare(b.name, "zh-Hant");
+    });
 }
 
 export function getOrganization(data: AppData, orgId: string) {

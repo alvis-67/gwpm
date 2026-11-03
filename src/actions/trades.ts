@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { canManageProjects, requireSession } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
 import { evaluateDependency } from "@/lib/dependencies";
 import { pushNotification } from "@/lib/notifications";
-import { canAccessTrade, canEditTrade, inCompany } from "@/lib/permissions";
+import { canEditTrade, canLeadProject, projectLeaderId } from "@/lib/permissions";
 import { saveUpload, updateData } from "@/lib/store";
 import { TRADE_STATUSES, type TradeStatus } from "@/lib/types";
 import { tradeStatusLabel } from "@/lib/labels";
@@ -32,11 +32,15 @@ export async function updateTradeStatusAction(
     }
 
     const project = data.projects.find((p) => p.id === trade.projectId);
-    if (!project || !inCompany(user, project.orgId)) throw new Error("無權限");
+    if (!project) throw new Error("無權限");
     const recipients = new Set<string>();
-    data.users
-      .filter((u) => u.roleDefault === "owner" && u.orgId === project.orgId)
-      .forEach((u) => recipients.add(u.id));
+    const leaderId = projectLeaderId(project);
+    if (leaderId) recipients.add(leaderId);
+    else {
+      data.users
+        .filter((u) => u.roleDefault === "owner" && u.orgId === project.orgId)
+        .forEach((u) => recipients.add(u.id));
+    }
     if (trade.assigneeUserId) recipients.add(trade.assigneeUserId);
     recipients.delete(user.id);
 
@@ -126,7 +130,7 @@ export async function addCommentAction(formData: FormData) {
   await updateData((data) => {
     const trade = data.trades.find((t) => t.id === tradeId);
     if (!trade) throw new Error("找不到工種");
-    if (!canAccessTrade(data, user, trade)) throw new Error("無權限");
+    if (!canEditTrade(data, user, trade)) throw new Error("無權限");
 
     data.comments.push({
       id: createId("cmt"),
@@ -137,14 +141,18 @@ export async function addCommentAction(formData: FormData) {
     });
 
     const project = data.projects.find((p) => p.id === trade.projectId);
-    if (!project || !inCompany(user, project.orgId)) throw new Error("無權限");
+    if (!project) throw new Error("無權限");
     const recipients = new Set<string>();
-    if (canManageProjects(user)) {
+    if (canLeadProject(data, user, project.id)) {
       if (trade.assigneeUserId) recipients.add(trade.assigneeUserId);
     } else {
-      data.users
-        .filter((u) => u.roleDefault === "owner" && u.orgId === project.orgId)
-        .forEach((u) => recipients.add(u.id));
+      const leaderId = projectLeaderId(project);
+      if (leaderId) recipients.add(leaderId);
+      else {
+        data.users
+          .filter((u) => u.roleDefault === "owner" && u.orgId === project.orgId)
+          .forEach((u) => recipients.add(u.id));
+      }
     }
     recipients.delete(user.id);
     for (const uid of recipients) {
