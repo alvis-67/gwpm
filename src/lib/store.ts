@@ -3,7 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import type { AppData } from "./types";
 import { addPlatformAdmin, platformAdminPresent } from "./ensure-admin";
-import { stripRemovedDemoAccounts } from "./remove-demo-accounts";
+import { hasRemovedDemoAccount, stripRemovedDemoAccounts } from "./remove-demo-accounts";
 import { buildSeedData } from "./seed";
 import { supabaseConfigured } from "./supabase";
 import {
@@ -136,16 +136,21 @@ async function withPlatformAdmin(data: AppData): Promise<AppData> {
 }
 
 async function withoutRemovedDemoAccounts(data: AppData): Promise<AppData> {
-  if (!stripRemovedDemoAccounts(data)) return data;
+  if (!hasRemovedDemoAccount(data)) return data;
+  const next = structuredClone(data);
+  stripRemovedDemoAccounts(next);
+  const revision = revisionOf(data);
+  if (revision !== null) tagRevision(next, revision);
   try {
-    await writeData(data);
+    await writeData(next);
+    return next;
   } catch (error) {
     console.error(
       "[gwpm] retired demo accounts were not removed",
       error instanceof Error ? error.message : "write failed",
     );
+    return data;
   }
-  return data;
 }
 
 async function readyData(data: AppData): Promise<AppData> {
@@ -154,7 +159,13 @@ async function readyData(data: AppData): Promise<AppData> {
 
 export async function readData(): Promise<AppData> {
   if (supabaseConfigured()) {
-    return readyData(await readSupabaseData());
+    let loaded = await readSupabaseData();
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const ready = await readyData(loaded);
+      if (!hasRemovedDemoAccount(ready)) return ready;
+      loaded = await readSupabaseData();
+    }
+    return loaded;
   }
 
   if (globalForStore.__gwpmMemory && !needsReseed(globalForStore.__gwpmMemory)) {
