@@ -174,7 +174,6 @@ export default async function TradeDetailPage({
 
       <div className="link-row">
         <Link href={`/projects/${id}/trades/${tradeId}/logs`}>日誌與相片</Link>
-        <Link href={`/projects/${id}/trades/${tradeId}/comments`}>留言</Link>
         <Link href={`/projects/${id}/procurement`}>相關採購</Link>
       </div>
 

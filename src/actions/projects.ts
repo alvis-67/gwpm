@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { isAdmin, isOwner, requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
-import { assignableUsers, managedProject } from "@/lib/permissions";
+import { assignableUsers, canAccessProject, managedProject } from "@/lib/permissions";
 import { updateData } from "@/lib/store";
 import { joinProjectNotes, splitProjectNotes } from "@/lib/project-docs";
 import { DEFAULT_TRADE_TEMPLATES, type ProjectStatus } from "@/lib/types";
@@ -366,9 +366,8 @@ export async function addProjectCommentAction(formData: FormData) {
 
   await updateData((data) => {
     const project = data.projects.find((item) => item.id === projectId);
-    if (!project) throw new Error("找不到工程案");
+    if (!project || !canAccessProject(data, user, project.id)) throw new Error("無權限");
     const kept = splitProjectNotes(project.notes);
-    if (kept.leadUserId !== user.id) throw new Error("只有負責人可以留言");
     project.notes = joinProjectNotes(kept.text, kept.quotationNumber, kept.invoiceNumber, {
       leadUserId: kept.leadUserId,
       comments: [

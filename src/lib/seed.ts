@@ -265,15 +265,7 @@ export async function buildSeedData(): Promise<AppData> {
       },
     ],
     photos: [],
-    comments: [
-      {
-        id: createId("cmt"),
-        projectTradeId: paintTrade.id,
-        authorUserId: ADMIN_USER_ID,
-        body: "泥水完成後請即進場，漆料已訂。",
-        createdAt: new Date(Date.now() - 1800_000).toISOString(),
-      },
-    ],
+    comments: [],
     notifications: [
       {
         id: createId("ntf"),
@@ -298,18 +290,6 @@ export async function buildSeedData(): Promise<AppData> {
         href: "/today",
         readAt: null,
         createdAt: now,
-      },
-      {
-        id: createId("ntf"),
-        userId: ADMIN_USER_ID,
-        type: "comment",
-        title: "新留言",
-        body: "Alvis 於「油漆」留言",
-        entityType: "trade",
-        entityId: paintTrade.id,
-        href: `/projects/${projectId}/trades/${paintTrade.id}/comments`,
-        readAt: null,
-        createdAt: new Date(Date.now() - 1700_000).toISOString(),
       },
     ],
   };

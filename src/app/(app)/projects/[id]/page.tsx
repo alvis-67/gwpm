@@ -166,18 +166,14 @@ export default async function ProjectOverviewPage({
           })}
         </div>
       )}
-      {docs.leadUserId === user.id ? (
-        <form action={addProjectCommentAction} className="mb-6">
-          <input type="hidden" name="projectId" value={id} />
-          <div className="field">
-            <label htmlFor="commentBody">留言（必填）</label>
-            <textarea id="commentBody" name="body" required placeholder="輸入留言…" />
-          </div>
-          <SubmitButton label="送出" className="btn btn-primary" />
-        </form>
-      ) : (
-        <p className="muted text-sm mb-6">只有此工程的負責人可以留言。</p>
-      )}
+      <form action={addProjectCommentAction} className="mb-6">
+        <input type="hidden" name="projectId" value={id} />
+        <div className="field">
+          <label htmlFor="commentBody">留言（必填）</label>
+          <textarea id="commentBody" name="body" required placeholder="輸入留言…" />
+        </div>
+        <SubmitButton label="送出" className="btn btn-primary" />
+      </form>
 
       <div className="link-row">
         <Link href={`/projects/${id}/schedule`}>排程</Link>
