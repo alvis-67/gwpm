@@ -48,10 +48,10 @@ npm run seed   # 重設演示資料
 
 ## 部署（Vercel）
 
-1. Import 此 GitHub repo
-2. 設定 `AUTH_SECRET`
-3. 啟用 Vercel Blob 並設定 `BLOB_READ_WRITE_TOKEN`
-4. Deploy 後首次請求會自動 seed；或於建置後以 CLI／一-off 執行 `npm run seed`
+1. Import 此 GitHub repo（或 CLI：`npx vercel link` → `npx vercel --prod`）
+2. 設定環境變數 `AUTH_SECRET`（必填）
+3. 建議啟用 Vercel Blob 並設定 `BLOB_READ_WRITE_TOKEN`（生產可寫持久化；未設則用記憶體／`/tmp`，實例重啟會遺失）
+4. Deploy 後首次請求會自動 seed；本地可用 `npm run seed`
 
 ## 指令摘要
 

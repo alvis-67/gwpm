@@ -5,6 +5,7 @@ import type { AppData } from "./types";
 import { buildSeedData } from "./seed";
 
 const LOCAL_DATA_PATH = path.join(process.cwd(), "data", "gwpm.json");
+const TMP_DATA_PATH = path.join("/tmp", "gwpm.json");
 const BLOB_PATHNAME = "gwpm-data.json";
 
 const globalForStore = globalThis as unknown as {
@@ -16,22 +17,43 @@ function blobStoreEnabled(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 }
 
-async function ensureLocalDir() {
-  await fs.mkdir(path.dirname(LOCAL_DATA_PATH), { recursive: true });
+function onVercel(): boolean {
+  return Boolean(process.env.VERCEL);
 }
 
 async function readFromLocal(): Promise<AppData | null> {
-  try {
-    const raw = await fs.readFile(LOCAL_DATA_PATH, "utf8");
-    return JSON.parse(raw) as AppData;
-  } catch {
-    return null;
+  for (const p of [TMP_DATA_PATH, LOCAL_DATA_PATH]) {
+    try {
+      const raw = await fs.readFile(p, "utf8");
+      return JSON.parse(raw) as AppData;
+    } catch {
+      // try next
+    }
   }
+  return null;
 }
 
 async function writeToLocal(data: AppData): Promise<void> {
-  await ensureLocalDir();
-  await fs.writeFile(LOCAL_DATA_PATH, JSON.stringify(data, null, 2), "utf8");
+  const payload = JSON.stringify(data, null, 2);
+  // Prefer project data/ locally; on Vercel serverless FS is read-only → /tmp + memory
+  const targets = onVercel()
+    ? [TMP_DATA_PATH]
+    : [LOCAL_DATA_PATH, TMP_DATA_PATH];
+  let wrote = false;
+  for (const p of targets) {
+    try {
+      await fs.mkdir(path.dirname(p), { recursive: true });
+      await fs.writeFile(p, payload, "utf8");
+      wrote = true;
+      break;
+    } catch {
+      // try next
+    }
+  }
+  if (!wrote) {
+    // Memory already updated by writeData; tolerate ephemeral environments
+    console.warn("[gwpm] persist skipped; using in-memory store for this instance");
+  }
 }
 
 async function readFromBlob(): Promise<AppData | null> {
@@ -146,10 +168,24 @@ export async function saveUpload(
     return blob.url;
   }
 
-  const uploadsDir = path.join(process.cwd(), "public", "uploads");
-  await fs.mkdir(uploadsDir, { recursive: true });
   const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
   const finalName = `${Date.now()}_${safe}`;
-  await fs.writeFile(path.join(uploadsDir, finalName), bytes);
-  return `/uploads/${finalName}`;
+  const dirs = onVercel()
+    ? [path.join("/tmp", "uploads")]
+    : [path.join(process.cwd(), "public", "uploads"), path.join("/tmp", "uploads")];
+
+  for (const uploadsDir of dirs) {
+    try {
+      await fs.mkdir(uploadsDir, { recursive: true });
+      await fs.writeFile(path.join(uploadsDir, finalName), bytes);
+      if (uploadsDir.startsWith("/tmp")) {
+        // Serve via data URL fallback is not ideal; require Blob for durable photos on Vercel
+        return `data:${contentType};base64,${bytes.toString("base64")}`;
+      }
+      return `/uploads/${finalName}`;
+    } catch {
+      // try next
+    }
+  }
+  throw new Error("無法儲存相片（請設定 BLOB_READ_WRITE_TOKEN）");
 }
