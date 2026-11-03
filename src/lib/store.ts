@@ -89,9 +89,18 @@ async function writeToBlob(data: AppData): Promise<void> {
   });
 }
 
+function normalizeData(data: AppData): AppData {
+  for (const user of data.users) {
+    if (typeof user.companyName !== "string") {
+      user.companyName = "";
+    }
+  }
+  return data;
+}
+
 export async function readData(): Promise<AppData> {
   if (globalForStore.__gwpmMemory) {
-    return structuredClone(globalForStore.__gwpmMemory);
+    return structuredClone(normalizeData(globalForStore.__gwpmMemory));
   }
 
   let data: AppData | null = null;
@@ -104,6 +113,8 @@ export async function readData(): Promise<AppData> {
   if (!data) {
     data = await buildSeedData();
     await writeData(data);
+  } else {
+    data = normalizeData(data);
   }
 
   globalForStore.__gwpmMemory = structuredClone(data);

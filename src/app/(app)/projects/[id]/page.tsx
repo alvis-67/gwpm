@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { addTradeAction } from "@/actions/projects";
 import { DependencyBanner } from "@/components/DependencyBanner";
 import { TradeStatusChip, ProjectStatusChip } from "@/components/StatusChip";
 import { requireSession, isOwner } from "@/lib/auth";
 import { formatDateTimeZh, formatDateZh } from "@/lib/dates";
 import { evaluateDependency, projectBlockedTrades } from "@/lib/dependencies";
+import { formatLeadLabel } from "@/lib/format";
 import {
   canAccessProject,
   visibleTradesForProject,
 } from "@/lib/permissions";
 import { readData } from "@/lib/store";
 import { tradeStatusLabel } from "@/lib/labels";
+import { DEFAULT_TRADE_TEMPLATES } from "@/lib/types";
 
 export default async function ProjectOverviewPage({
   params,
@@ -53,6 +56,11 @@ export default async function ProjectOverviewPage({
             <span>{project.location || "地點未填"}</span>
           </div>
         </div>
+        {owner && (
+          <Link href={`/projects/${id}/edit`} className="btn btn-secondary">
+            編輯
+          </Link>
+        )}
       </header>
 
       {blocked.length > 0 && (
@@ -100,7 +108,7 @@ export default async function ProjectOverviewPage({
                 <h3 className="list-row-title">{trade.name}</h3>
                 <div className="list-row-meta">
                   <TradeStatusChip status={trade.status} />
-                  <span>{assignee?.name || "未指派"}</span>
+                  <span>{assignee ? formatLeadLabel(assignee) : "未指派"}</span>
                   <span className="font-mono">{formatDateZh(trade.plannedStart)}</span>
                   {hint.kind === "blocked" && <span style={{ color: "var(--color-danger)" }}>受阻</span>}
                 </div>
@@ -111,11 +119,43 @@ export default async function ProjectOverviewPage({
         })}
       </div>
 
+      {owner && (
+        <>
+          <h2 className="section-title">新增工種</h2>
+          <p className="secondary text-sm mb-3">
+            可自訂任何工種名稱，不必使用預設範本。常用參考：
+            {DEFAULT_TRADE_TEMPLATES.join("、")}。
+          </p>
+          <form action={addTradeAction} className="mb-2">
+            <input type="hidden" name="projectId" value={id} />
+            <div className="field">
+              <label htmlFor="tradeName">工種名稱（必填）</label>
+              <input
+                id="tradeName"
+                name="name"
+                required
+                placeholder="例：防水、鋁窗、空調、天花…"
+                list="trade-suggestions"
+              />
+              <datalist id="trade-suggestions">
+                {DEFAULT_TRADE_TEMPLATES.map((t) => (
+                  <option key={t} value={t} />
+                ))}
+              </datalist>
+            </div>
+            <button type="submit" className="btn btn-primary">
+              新增工種
+            </button>
+          </form>
+        </>
+      )}
+
       <div className="link-row">
         <Link href={`/projects/${id}/schedule`}>排程</Link>
         <Link href={`/projects/${id}/procurement`}>採購</Link>
         {owner && <Link href={`/projects/${id}/dependencies`}>依賴設定</Link>}
         {owner && <Link href={`/projects/${id}/report`}>匯出報告</Link>}
+        {owner && <Link href="/partners">工程公司／負責人</Link>}
       </div>
 
       <h2 className="section-title">近期動態</h2>

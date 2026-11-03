@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
 import { updateProfileAction } from "@/actions/profile";
 import { requireSession, isOwner } from "@/lib/auth";
@@ -6,6 +7,7 @@ import { isUsingBlobStore } from "@/lib/store";
 
 export default async function MePage() {
   const user = await requireSession();
+  const owner = isOwner(user);
   const storeMode = isUsingBlobStore() ? "Vercel Blob（可寫）" : "本地 JSON（開發）";
 
   return (
@@ -29,10 +31,25 @@ export default async function MePage() {
           <p className="font-medium mb-0">{user.name}</p>
           <p className="secondary text-sm mb-0">{user.email}</p>
           <p className="muted text-xs mb-0">
-            {isOwner(user) ? "老闆（總協調）" : "工種負責人"}
+            {owner ? "老闆（總協調）" : "工種負責人"}
           </p>
         </div>
       </div>
+
+      {owner && (
+        <>
+          <h2 className="section-title">管理</h2>
+          <div className="list mb-4">
+            <Link href="/partners" className="list-row">
+              <div className="list-row-main">
+                <h2 className="list-row-title">工程公司／負責人</h2>
+                <p className="secondary text-sm mb-0">新增或編輯分包公司與現場負責人</p>
+              </div>
+              <span className="muted">›</span>
+            </Link>
+          </div>
+        </>
+      )}
 
       <h2 className="section-title">個人資料</h2>
       <form action={updateProfileAction}>

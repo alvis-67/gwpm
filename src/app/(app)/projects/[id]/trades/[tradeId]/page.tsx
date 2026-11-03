@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { assignTradeAction, updateTradeScheduleAction } from "@/actions/projects";
+import {
+  assignTradeAction,
+  deleteTradeAction,
+  renameTradeAction,
+  updateTradeScheduleAction,
+} from "@/actions/projects";
 import { DependencyBanner } from "@/components/DependencyBanner";
 import { TradeStatusControl } from "@/components/TradeStatusControl";
 import { ProcurementStatusChip } from "@/components/StatusChip";
 import { requireSession, isOwner } from "@/lib/auth";
 import { formatDateZh } from "@/lib/dates";
 import { evaluateDependency } from "@/lib/dependencies";
+import { formatLeadLabel } from "@/lib/format";
 import {
   canAccessProject,
   canAccessTrade,
@@ -56,7 +62,7 @@ export default async function TradeDetailPage({
         <div>
           <h1 className="page-title">{trade.name}</h1>
           <p className="secondary text-sm mt-1">
-            負責人：{assignee?.name || "未指派"}
+            負責人：{assignee ? formatLeadLabel(assignee) : "未指派"}
           </p>
         </div>
       </header>
@@ -66,6 +72,22 @@ export default async function TradeDetailPage({
       <div className="mt-4">
         <DependencyBanner hint={hint} />
       </div>
+
+      {owner && (
+        <>
+          <h2 className="section-title">工種名稱</h2>
+          <form action={renameTradeAction} className="mb-4">
+            <input type="hidden" name="tradeId" value={trade.id} />
+            <div className="field">
+              <label htmlFor="name">名稱（可自訂，不限預設範本）</label>
+              <input id="name" name="name" required defaultValue={trade.name} />
+            </div>
+            <button type="submit" className="btn btn-secondary">
+              重新命名
+            </button>
+          </form>
+        </>
+      )}
 
       <h2 className="section-title">排程</h2>
       <div className="list" style={{ padding: "var(--space-3) var(--page-padding-x)" }}>
@@ -87,15 +109,22 @@ export default async function TradeDetailPage({
       {owner && (
         <>
           <h2 className="section-title">指派負責人</h2>
+          <p className="secondary text-sm mb-2">
+            找不到公司？先到{" "}
+            <Link href="/partners" className="btn btn-tertiary" style={{ display: "inline", padding: 0, minHeight: 0 }}>
+              工程公司／負責人
+            </Link>{" "}
+            新增。
+          </p>
           <form action={assignTradeAction} className="mb-4">
             <input type="hidden" name="tradeId" value={trade.id} />
             <div className="field">
-              <label htmlFor="assigneeUserId">負責人</label>
+              <label htmlFor="assigneeUserId">工程公司｜負責人</label>
               <select id="assigneeUserId" name="assigneeUserId" defaultValue={trade.assigneeUserId || ""}>
                 <option value="">未指派</option>
                 {leads.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.name}（{u.phoneE164 || "無電話"}）
+                    {formatLeadLabel(u)}（{u.phoneE164 || "無電話"}）
                   </option>
                 ))}
               </select>
@@ -155,6 +184,16 @@ export default async function TradeDetailPage({
         <Link href={`/projects/${id}/trades/${tradeId}/comments`}>留言</Link>
         <Link href={`/projects/${id}/procurement`}>相關採購</Link>
       </div>
+
+      {owner && (
+        <form action={deleteTradeAction} className="mt-8">
+          <input type="hidden" name="tradeId" value={trade.id} />
+          <button type="submit" className="btn btn-danger">
+            刪除此工種
+          </button>
+          <p className="muted text-xs mt-2">會一併移除相關依賴、日誌與留言（採購改為案級）。</p>
+        </form>
+      )}
     </div>
   );
 }

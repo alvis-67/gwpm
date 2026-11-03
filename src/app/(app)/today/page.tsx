@@ -6,6 +6,7 @@ import { formatDateZh, todayISO, tomorrowISO } from "@/lib/dates";
 import { evaluateDependency } from "@/lib/dependencies";
 import { visibleProjects, visibleTradesForProject } from "@/lib/permissions";
 import { readData } from "@/lib/store";
+import { formatLeadLabel } from "@/lib/format";
 import { buildTomorrowEntryMessage, buildWhatsAppUrl } from "@/lib/whatsapp";
 
 export default async function TodayPage() {
@@ -101,7 +102,7 @@ export default async function TodayPage() {
                   <div>
                     <h3 className="list-row-title">{trade.name}</h3>
                     <p className="secondary text-sm mb-0">
-                      {project.name}｜{assignee?.name || "未指派"}｜
+                      {project.name}｜{assignee ? formatLeadLabel(assignee) : "未指派"}｜
                       <span className="font-mono">{assignee?.phoneE164 || "缺電話"}</span>
                     </p>
                   </div>

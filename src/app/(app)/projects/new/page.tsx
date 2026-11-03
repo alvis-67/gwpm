@@ -36,10 +36,13 @@ export default async function NewProjectPage() {
           <label htmlFor="notes">備註</label>
           <textarea id="notes" name="notes" />
         </div>
-        <label className="flex items-center gap-2 mb-6 text-sm">
-          <input type="checkbox" name="withTemplates" defaultChecked />
+        <label className="flex items-center gap-2 mb-2 text-sm">
+          <input type="checkbox" name="withTemplates" />
           套用預設工種範本（清拆、水電、泥水…）
         </label>
+        <p className="muted text-xs mb-6">
+          可不勾選；之後於工程案內自行新增任意工種名稱。
+        </p>
         <button type="submit" className="btn btn-primary btn-block md:max-w-xs">
           建立
         </button>

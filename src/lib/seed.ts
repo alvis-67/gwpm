@@ -101,6 +101,7 @@ export async function buildSeedData(): Promise<AppData> {
         id: ownerId,
         email: "owner@demo.local",
         name: "陳老闆",
+        companyName: "良願工程",
         phoneE164: "+85291234567",
         roleDefault: "owner",
         passwordHash: ownerPass,
@@ -109,7 +110,8 @@ export async function buildSeedData(): Promise<AppData> {
       {
         id: paintId,
         email: "paint@demo.local",
-        name: "李師傅（油漆）",
+        name: "李師傅",
+        companyName: "美新油漆工程",
         phoneE164: "+85298765432",
         roleDefault: "trade_lead",
         passwordHash: leadPass,
@@ -118,7 +120,8 @@ export async function buildSeedData(): Promise<AppData> {
       {
         id: plumbId,
         email: "plumb@demo.local",
-        name: "王師傅（水電）",
+        name: "王師傅",
+        companyName: "通達水電",
         phoneE164: "+85261112222",
         roleDefault: "trade_lead",
         passwordHash: leadPass,

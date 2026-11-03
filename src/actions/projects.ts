@@ -77,6 +77,80 @@ export async function updateProjectStatusAction(
   revalidatePath("/projects");
 }
 
+export async function updateProjectAction(formData: FormData) {
+  const user = await requireSession();
+  if (!isOwner(user)) throw new Error("無權限");
+  const projectId = String(formData.get("projectId") || "");
+  const name = String(formData.get("name") || "").trim();
+  if (!name) throw new Error("工程案名稱（必填）");
+  const location = String(formData.get("location") || "").trim();
+  const clientDisplayName = String(formData.get("clientDisplayName") || "").trim();
+  const plannedStart = String(formData.get("plannedStart") || "");
+  const plannedEnd = String(formData.get("plannedEnd") || "");
+  const notes = String(formData.get("notes") || "");
+  const status = String(formData.get("status") || "planning") as ProjectStatus;
+
+  await updateData((data) => {
+    const p = data.projects.find((x) => x.id === projectId);
+    if (!p) throw new Error("找不到工程案");
+    p.name = name;
+    p.location = location;
+    p.clientDisplayName = clientDisplayName;
+    p.plannedStart = plannedStart;
+    p.plannedEnd = plannedEnd;
+    p.notes = notes;
+    p.status = status;
+    p.updatedAt = new Date().toISOString();
+  });
+
+  revalidatePath("/projects");
+  redirect(`/projects/${projectId}`);
+}
+
+export async function renameTradeAction(formData: FormData) {
+  const user = await requireSession();
+  if (!isOwner(user)) throw new Error("無權限");
+  const tradeId = String(formData.get("tradeId") || "");
+  const name = String(formData.get("name") || "").trim();
+  if (!name) throw new Error("工種名稱（必填）");
+  let projectId = "";
+  await updateData((data) => {
+    const trade = data.trades.find((t) => t.id === tradeId);
+    if (!trade) throw new Error("找不到工種");
+    trade.name = name;
+    projectId = trade.projectId;
+  });
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/trades/${tradeId}`);
+}
+
+export async function deleteTradeAction(formData: FormData) {
+  const user = await requireSession();
+  if (!isOwner(user)) throw new Error("無權限");
+  const tradeId = String(formData.get("tradeId") || "");
+  let projectId = "";
+  await updateData((data) => {
+    const trade = data.trades.find((t) => t.id === tradeId);
+    if (!trade) throw new Error("找不到工種");
+    projectId = trade.projectId;
+    const logIds = new Set(
+      data.workLogs.filter((l) => l.projectTradeId === tradeId).map((l) => l.id),
+    );
+    data.trades = data.trades.filter((t) => t.id !== tradeId);
+    data.dependencies = data.dependencies.filter(
+      (d) => d.tradeId !== tradeId && d.dependsOnTradeId !== tradeId,
+    );
+    data.procurements = data.procurements.map((p) =>
+      p.tradeId === tradeId ? { ...p, tradeId: null } : p,
+    );
+    data.workLogs = data.workLogs.filter((l) => l.projectTradeId !== tradeId);
+    data.photos = data.photos.filter((p) => !logIds.has(p.workLogId));
+    data.comments = data.comments.filter((c) => c.projectTradeId !== tradeId);
+  });
+  revalidatePath(`/projects/${projectId}`);
+  redirect(`/projects/${projectId}`);
+}
+
 export async function assignTradeAction(formData: FormData) {
   const user = await requireSession();
   if (!isOwner(user)) throw new Error("無權限");

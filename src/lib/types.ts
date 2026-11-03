@@ -25,6 +25,8 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  /** 分包／工程公司名稱（負責人用） */
+  companyName: string;
   phoneE164: string;
   roleDefault: Role;
   passwordHash: string;
