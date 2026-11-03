@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { canManageProjects, isAdmin, isOwner, requireSession } from "@/lib/auth";
+import { isAdmin, isOwner, requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
 import { assignableUsers, managedProject } from "@/lib/permissions";
 import { updateData } from "@/lib/store";
@@ -36,7 +36,6 @@ async function redirectUnlessHere(path: string) {
 
 export async function createProjectAction(formData: FormData) {
   const user = await requireSession();
-  if (!canManageProjects(user)) throw new Error("無權限");
   const name = String(formData.get("name") || "").trim();
   const location = String(formData.get("location") || "").trim();
   const clientDisplayName = String(formData.get("clientDisplayName") || "").trim();

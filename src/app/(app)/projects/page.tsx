@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { canManageProjects, requireSession } from "@/lib/auth";
+import { requireSession } from "@/lib/auth";
 import { formatDateZh } from "@/lib/dates";
 import { projectStatusLabel } from "@/lib/labels";
 import { visibleProjects } from "@/lib/permissions";
@@ -15,7 +15,6 @@ export default async function ProjectsPage({
   const sp = await searchParams;
   const user = await requireSession();
   const data = await readData();
-  const owner = canManageProjects(user);
   const statusFilter = (sp.status || "all") as ProjectStatus | "all";
 
   let projects = visibleProjects(data, user).filter((p) => p.status !== "archived" || statusFilter === "archived");
@@ -29,11 +28,9 @@ export default async function ProjectsPage({
     <div className="page">
       <header className="page-header">
         <h1 className="page-title">工程</h1>
-        {owner && (
-          <Link href="/projects/new" className="btn btn-primary">
-            建立新工程
-          </Link>
-        )}
+        <Link href="/projects/new" className="btn btn-primary">
+          建立新工程
+        </Link>
       </header>
 
       <div className="filter-row">
@@ -59,11 +56,9 @@ export default async function ProjectsPage({
       {projects.length === 0 ? (
         <div className="empty">
           <p>尚無工程案</p>
-          {owner && (
-            <Link href="/projects/new" className="btn btn-primary mt-4">
-              建立新工程
-            </Link>
-          )}
+          <Link href="/projects/new" className="btn btn-primary mt-4">
+            建立新工程
+          </Link>
         </div>
       ) : (
         <div className="list">

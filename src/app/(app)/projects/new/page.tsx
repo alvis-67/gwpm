@@ -1,12 +1,10 @@
-import { redirect } from "next/navigation";
 import { createProjectAction } from "@/actions/projects";
 import { SubmitButton } from "@/components/SubmitButton";
-import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
+import { isAdmin, requireSession } from "@/lib/auth";
 import { readData } from "@/lib/store";
 
 export default async function NewProjectPage() {
   const user = await requireSession();
-  if (!canManageProjects(user)) redirect("/projects");
   const admin = isAdmin(user);
   const data = admin ? await readData() : null;
 
