@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  assignTradeAction,
   deleteTradeAction,
   renameTradeAction,
   updateTradeScheduleAction,
 } from "@/actions/projects";
+import { AssignLeadForm } from "@/components/AssigneeSelect";
 import { ConfirmTwiceButton } from "@/components/ConfirmTwiceButton";
 import { SubmitButton } from "@/components/SubmitButton";
 import { DependencyBanner } from "@/components/DependencyBanner";
@@ -118,21 +118,14 @@ export default async function TradeDetailPage({
             </Link>{" "}
             新增。
           </p>
-          <form action={assignTradeAction} className="mb-4">
-            <input type="hidden" name="tradeId" value={trade.id} />
-            <div className="field">
-              <label htmlFor="assigneeUserId">工程公司｜負責人</label>
-              <select id="assigneeUserId" name="assigneeUserId" defaultValue={trade.assigneeUserId || ""}>
-                <option value="">未指派</option>
-                {leads.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {formatLeadLabel(u)}（{u.phoneE164 || "無電話"}）
-                  </option>
-                ))}
-              </select>
-            </div>
-            <SubmitButton label="儲存指派" className="btn btn-secondary" />
-          </form>
+          <AssignLeadForm
+            tradeId={trade.id}
+            assigneeUserId={trade.assigneeUserId}
+            leads={leads.map((user) => ({
+              id: user.id,
+              label: `${formatLeadLabel(user)}（${user.phoneE164 || "無電話"}）`,
+            }))}
+          />
 
           <h2 className="section-title">編輯排程</h2>
           <form action={updateTradeScheduleAction}>
