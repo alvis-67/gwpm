@@ -67,6 +67,10 @@ export default function LoginPage() {
             </button>
           </form>
 
+          <p className="secondary text-sm mt-6 mb-0">
+            沒有公開註冊，Supabase Authentication 的用戶也不能登入。請用公司老闆帳號進入「我的 → 帳號」建立登入。
+          </p>
+
           <div className="mt-8 text-sm secondary">
             <p className="font-medium text-[var(--color-ink)] mb-2">演示帳號</p>
             <ul className="space-y-1 font-mono text-xs">
