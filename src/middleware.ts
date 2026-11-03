@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // Node.js runtime required for anonymous / temporary Vercel deploys
 export const runtime = "nodejs";
 
-const PUBLIC = ["/login", "/register", "/manifest.webmanifest", "/sw.js"];
+const PUBLIC = ["/login", "/manifest.webmanifest", "/sw.js"];
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

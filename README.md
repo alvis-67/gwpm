@@ -29,7 +29,7 @@ npm run dev
 | 水電負責人 | `plumb@demo.local` | `lead123` | （Infunity 下分包） |
 | 無關公司老闆 | `other@demo.local` | `owner123` | 示例無關工程有限公司 |
 
-新公司老闆：開 `/register` 註冊（建立獨立 Organization）。
+沒有公開註冊。老闆登入後在「我的 → 帳號」建立本公司帳號（電郵、姓名、角色、密碼）。新帳號的 `orgId` 固定為建立者的公司。
 
 ## 資料層
 
