@@ -20,16 +20,7 @@ npm run seed
 npm run dev
 ```
 
-### 演示帳號
-
-| 角色 | 電郵 | 密碼 | 公司 |
-|------|------|------|------|
-| Infunity 老闆 Alvis | `owner@demo.local` | `owner123` | Infunity Company Limited |
-| 油漆負責人 | `paint@demo.local` | `lead123` | （Infunity 下分包） |
-| 水電負責人 | `plumb@demo.local` | `lead123` | （Infunity 下分包） |
-| 無關公司老闆 | `other@demo.local` | `owner123` | 示例無關工程有限公司 |
-
-沒有公開註冊。老闆登入後在「我的 → 帳號」建立本公司帳號（電郵、姓名、角色、密碼）。新帳號的 `orgId` 固定為建立者的公司。Supabase Authentication 的用戶不能登入。
+沒有公開註冊，也沒有示範登入。系統管理員在「我的 → 帳號」建立工程公司老闆和項目成員。Supabase Authentication 的用戶不能登入。
 
 首頁（未登入）顯示 `Version`，定義在 `src/lib/version.ts`。每次發佈把 `1.0` 改成 `1.1`、`1.2`，依此類推。
 
@@ -46,7 +37,7 @@ npm run dev
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 否 | 伺服器資料層不讀。RLS 拒絕 anon |
 | `DATABASE_URL` | 否 | 只給 psql。應用程式不讀 |
 
-接上步驟：Supabase 建立 project → SQL Editor 執行 `supabase/schema.sql` → 設定上面兩個必填變數 → 重新部署。空資料庫第一次讀取會寫入現有演示帳號。`npm run seed` 在已連接時會把演示資料整份重置進 Supabase。
+接上步驟：Supabase 建立 project → SQL Editor 執行 `supabase/schema.sql` → 設定上面兩個必填變數 → 重新部署。空資料庫第一次讀取會寫入系統管理員與示例工程，不會建立已停用的示範登入。`npm run seed` 在已連接時會把這份資料整份重置進 Supabase。
 
 | 環境 | 行為 |
 |------|------|

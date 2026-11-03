@@ -1,4 +1,3 @@
-import { hash } from "bcryptjs";
 import { addDays, format, startOfDay } from "date-fns";
 import {
   ADMIN_EMAIL,
@@ -15,16 +14,9 @@ function d(offset: number, base = new Date()): string {
 
 export async function buildSeedData(): Promise<AppData> {
   const now = new Date().toISOString();
-  const ownerPass = await hash("owner123", 10);
-  const leadPass = await hash("lead123", 10);
 
   const infunityOrgId = createId("org");
   const otherOrgId = createId("org");
-
-  const ownerId = createId("user");
-  const paintId = createId("user");
-  const plumbId = createId("user");
-  const otherOwnerId = createId("user");
 
   const projectId = createId("proj");
   const project2Id = createId("proj");
@@ -49,7 +41,7 @@ export async function buildSeedData(): Promise<AppData> {
       id: createId("trade"),
       projectId,
       name: "水電",
-      assigneeUserId: plumbId,
+      assigneeUserId: null,
       status: "in_progress" as const,
       plannedStart: d(-3),
       plannedEnd: d(5),
@@ -75,7 +67,7 @@ export async function buildSeedData(): Promise<AppData> {
       id: createId("trade"),
       projectId,
       name: "油漆",
-      assigneeUserId: paintId,
+      assigneeUserId: null,
       status: "ready" as const,
       plannedStart: d(1),
       plannedEnd: d(6),
@@ -136,50 +128,6 @@ export async function buildSeedData(): Promise<AppData> {
         phoneE164: "",
         roleDefault: "admin",
         passwordHash: ADMIN_PASSWORD_HASH,
-        createdAt: now,
-      },
-      {
-        id: ownerId,
-        orgId: infunityOrgId,
-        email: "owner@demo.local",
-        name: "Alvis",
-        companyName: "Infunity Company Limited",
-        phoneE164: "+85291234567",
-        roleDefault: "owner",
-        passwordHash: ownerPass,
-        createdAt: now,
-      },
-      {
-        id: paintId,
-        orgId: infunityOrgId,
-        email: "paint@demo.local",
-        name: "李師傅",
-        companyName: "美新油漆工程",
-        phoneE164: "+85298765432",
-        roleDefault: "trade_lead",
-        passwordHash: leadPass,
-        createdAt: now,
-      },
-      {
-        id: plumbId,
-        orgId: infunityOrgId,
-        email: "plumb@demo.local",
-        name: "王師傅",
-        companyName: "通達水電",
-        phoneE164: "+85261112222",
-        roleDefault: "trade_lead",
-        passwordHash: leadPass,
-        createdAt: now,
-      },
-      {
-        id: otherOwnerId,
-        orgId: otherOrgId,
-        email: "other@demo.local",
-        name: "陳生",
-        companyName: "示例無關工程有限公司",
-        phoneE164: "+85290001111",
-        roleDefault: "owner",
-        passwordHash: ownerPass,
         createdAt: now,
       },
     ],
@@ -243,7 +191,7 @@ export async function buildSeedData(): Promise<AppData> {
         id: createId("trade"),
         projectId: project2Id,
         name: "室內設計",
-        assigneeUserId: paintId,
+        assigneeUserId: null,
         status: "not_started",
         plannedStart: d(12),
         plannedEnd: d(20),
@@ -303,14 +251,14 @@ export async function buildSeedData(): Promise<AppData> {
       {
         id: log1,
         projectTradeId: plumbTrade.id,
-        authorUserId: plumbId,
+        authorUserId: ADMIN_USER_ID,
         body: "完成廚房幹線配管，明早繼續插座。",
         createdAt: new Date(Date.now() - 3600_000).toISOString(),
       },
       {
         id: log2,
         projectTradeId: plasterTrade.id,
-        authorUserId: ownerId,
+        authorUserId: ADMIN_USER_ID,
         body: "泥水批盪進行中，客廳約 70%。",
         createdAt: new Date(Date.now() - 7200_000).toISOString(),
       },
@@ -320,7 +268,7 @@ export async function buildSeedData(): Promise<AppData> {
       {
         id: createId("cmt"),
         projectTradeId: paintTrade.id,
-        authorUserId: ownerId,
+        authorUserId: ADMIN_USER_ID,
         body: "泥水完成後請即進場，漆料已訂。",
         createdAt: new Date(Date.now() - 1800_000).toISOString(),
       },
@@ -328,7 +276,7 @@ export async function buildSeedData(): Promise<AppData> {
     notifications: [
       {
         id: createId("ntf"),
-        userId: paintId,
+        userId: ADMIN_USER_ID,
         type: "assigned",
         title: "您已被指派工種",
         body: "太古城單位翻新｜油漆",
@@ -340,7 +288,7 @@ export async function buildSeedData(): Promise<AppData> {
       },
       {
         id: createId("ntf"),
-        userId: ownerId,
+        userId: ADMIN_USER_ID,
         type: "tomorrow_entry",
         title: "明日進場提醒",
         body: "油漆｜美新油漆工程｜李師傅計劃明日進場",
@@ -352,7 +300,7 @@ export async function buildSeedData(): Promise<AppData> {
       },
       {
         id: createId("ntf"),
-        userId: paintId,
+        userId: ADMIN_USER_ID,
         type: "comment",
         title: "新留言",
         body: "Alvis 於「油漆」留言",

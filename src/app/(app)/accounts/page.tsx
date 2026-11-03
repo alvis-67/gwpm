@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin, requireSession } from "@/lib/auth";
+import { ADMIN_EMAIL } from "@/lib/admin-account";
 import { roleLabel } from "@/lib/labels";
 import { getOrganization } from "@/lib/permissions";
 import { readData } from "@/lib/store";
+import { DeleteAccountButton } from "./delete-button";
 
 export default async function AccountsPage() {
   const user = await requireSession();
@@ -35,6 +37,8 @@ export default async function AccountsPage() {
       <div className="list">
         {people.map((account) => {
           const org = getOrganization(data, account.orgId);
+          const locked =
+            account.id === user.id || account.email.toLowerCase() === ADMIN_EMAIL;
           return (
             <div key={account.id} className="list-row">
               <div className="list-row-main">
@@ -44,6 +48,12 @@ export default async function AccountsPage() {
                   <span>{account.email}</span>
                   <span>{org?.name || account.companyName || "未分公司"}</span>
                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link href={`/accounts/${account.id}/edit`} className="btn btn-secondary">
+                  編輯
+                </Link>
+                {locked ? null : <DeleteAccountButton userId={account.id} name={account.name} />}
               </div>
             </div>
           );

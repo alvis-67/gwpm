@@ -3,6 +3,7 @@ import { promises as fs } from "fs";
 import path from "path";
 import type { AppData } from "./types";
 import { addPlatformAdmin, platformAdminPresent } from "./ensure-admin";
+import { stripRemovedDemoAccounts } from "./remove-demo-accounts";
 import { buildSeedData } from "./seed";
 import { supabaseConfigured } from "./supabase";
 import {
@@ -134,13 +135,30 @@ async function withPlatformAdmin(data: AppData): Promise<AppData> {
   return data;
 }
 
+async function withoutRemovedDemoAccounts(data: AppData): Promise<AppData> {
+  if (!stripRemovedDemoAccounts(data)) return data;
+  try {
+    await writeData(data);
+  } catch (error) {
+    console.error(
+      "[gwpm] retired demo accounts were not removed",
+      error instanceof Error ? error.message : "write failed",
+    );
+  }
+  return data;
+}
+
+async function readyData(data: AppData): Promise<AppData> {
+  return withoutRemovedDemoAccounts(await withPlatformAdmin(data));
+}
+
 export async function readData(): Promise<AppData> {
   if (supabaseConfigured()) {
-    return withPlatformAdmin(await readSupabaseData());
+    return readyData(await readSupabaseData());
   }
 
   if (globalForStore.__gwpmMemory && !needsReseed(globalForStore.__gwpmMemory)) {
-    return withPlatformAdmin(structuredClone(normalizeData(globalForStore.__gwpmMemory)));
+    return readyData(structuredClone(normalizeData(globalForStore.__gwpmMemory)));
   }
 
   let data: AppData | null = null;
@@ -158,7 +176,7 @@ export async function readData(): Promise<AppData> {
   }
 
   globalForStore.__gwpmMemory = structuredClone(data);
-  return withPlatformAdmin(structuredClone(data));
+  return readyData(structuredClone(data));
 }
 
 export async function writeData(data: AppData): Promise<void> {

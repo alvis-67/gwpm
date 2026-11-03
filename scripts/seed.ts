@@ -12,11 +12,7 @@ async function main() {
       `Supabase 未連接（缺少 ${missing.join("、")}）。請設在 Vercel Environment Variables 與本地 .env.local，勿提交金鑰。`,
     );
   }
-  console.log("帳號：");
-  console.log("  Infunity 老闆 owner@demo.local / owner123");
-  console.log("  油漆 paint@demo.local / lead123");
-  console.log("  水電 plumb@demo.local / lead123");
-  console.log("  無關公司老闆 other@demo.local / owner123");
+  console.log("帳號由系統管理員在「我的 → 帳號」建立。");
 }
 
 main().catch((err) => {

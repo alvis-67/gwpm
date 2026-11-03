@@ -47,7 +47,6 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="username"
                 required
-                defaultValue="owner@demo.local"
               />
             </div>
             <div className="field">
@@ -58,7 +57,6 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
-                defaultValue="owner123"
               />
             </div>
             {state?.error && <p className="error mb-3 text-sm" style={{ color: "var(--color-danger)" }}>{state.error}</p>}
@@ -70,16 +68,6 @@ export default function LoginPage() {
           <p className="secondary text-sm mt-6 mb-0">
             沒有公開註冊，Supabase Authentication 的用戶也不能登入。系統管理員在「我的 → 帳號」建立工程公司老闆和項目成員。
           </p>
-
-          <div className="mt-8 text-sm secondary">
-            <p className="font-medium text-[var(--color-ink)] mb-2">演示帳號</p>
-            <ul className="space-y-1 font-mono text-xs">
-              <li>Infunity 老闆 Alvis：owner@demo.local / owner123</li>
-              <li>油漆負責人：paint@demo.local / lead123</li>
-              <li>水電負責人：plumb@demo.local / lead123</li>
-              <li>無關公司老闆：other@demo.local / owner123</li>
-            </ul>
-          </div>
         </div>
       </section>
     </main>
