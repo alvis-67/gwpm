@@ -311,16 +311,19 @@ begin
     raise exception 'revision_conflict' using errcode = '40001';
   end if;
 
-  delete from work_log_photos;
-  delete from trade_comments;
-  delete from work_logs;
-  delete from trade_dependencies;
-  delete from procurement_items;
-  delete from notifications;
-  delete from project_trades;
-  delete from projects;
-  delete from users;
-  delete from organizations;
+  -- Supabase loads pg-safeupdate for PostgREST. It rejects DELETE when
+  -- jointree->quals is null ("DELETE requires a WHERE clause"). WHERE true
+  -- is a real quals node, so the check passes and every row is still removed.
+  delete from work_log_photos where true;
+  delete from trade_comments where true;
+  delete from work_logs where true;
+  delete from trade_dependencies where true;
+  delete from procurement_items where true;
+  delete from notifications where true;
+  delete from project_trades where true;
+  delete from projects where true;
+  delete from users where true;
+  delete from organizations where true;
 
   insert into organizations (id, name, created_at)
   select id, name, coalesce("createdAt", now())

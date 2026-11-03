@@ -167,6 +167,21 @@ assert.match(schema, /function gwpm_replace_data/);
 assert.match(schema, /enable row level security/);
 assert.match(schema, /gwpm-uploads/);
 assert.match(schema, /revoke all on function public.gwpm_load_data\(\) from public/);
+assert.doesNotMatch(schema, /delete from\s+[a-z_]+\s*;/i);
+for (const table of [
+  "work_log_photos",
+  "trade_comments",
+  "work_logs",
+  "trade_dependencies",
+  "procurement_items",
+  "notifications",
+  "project_trades",
+  "projects",
+  "users",
+  "organizations",
+]) {
+  assert.match(schema, new RegExp(`delete from ${table} where true;`));
+}
 
 restoreEnv();
 console.log("supabase mapping checks ok");
