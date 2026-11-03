@@ -17,7 +17,7 @@ import { formatDateZh } from "@/lib/dates";
 import { evaluateDependency } from "@/lib/dependencies";
 import { formatLeadLabel } from "@/lib/format";
 import {
-  projectAssignees,
+  assignableUsers,
   canAccessProject,
   canAccessTrade,
   canEditTrade,
@@ -56,7 +56,7 @@ export default async function TradeDetailPage({
   const assignee = data.users.find((u) => u.id === trade.assigneeUserId);
   const procs = data.procurements.filter((p) => p.tradeId === tradeId);
   const shortage = procs.filter((p) => p.status === "shortage").length;
-  const leads = projectAssignees(data, id);
+  const leads = assignableUsers(data);
 
   return (
     <div className="page">

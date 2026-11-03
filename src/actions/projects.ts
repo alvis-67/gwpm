@@ -9,7 +9,6 @@ import {
   assignableUsers,
   canAccessProject,
   managedProject,
-  projectAssigneeIds,
   rememberProjectAssignee,
 } from "@/lib/permissions";
 import { updateData } from "@/lib/store";
@@ -238,8 +237,12 @@ export async function assignTradeAction(formData: FormData) {
     if (!trade) throw new Error("找不到工種");
     const project = managedProject(data, user, trade.projectId);
     if (!project) throw new Error("無權限");
-    const allowed = new Set(projectAssigneeIds(data, project));
-    if (assigneeUserId && !allowed.has(assigneeUserId)) throw new Error("請選擇負責人");
+    if (
+      assigneeUserId &&
+      !assignableUsers(data).some((candidate) => candidate.id === assigneeUserId)
+    ) {
+      throw new Error("請選擇負責人");
+    }
     rememberProjectAssignee(data, project, assigneeUserId || trade.assigneeUserId);
     trade.assigneeUserId = assigneeUserId;
     if (assigneeUserId) {

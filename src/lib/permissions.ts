@@ -129,8 +129,8 @@ export function orgTradeLeads(data: AppData, orgId: string): User[] {
 }
 
 /**
- * 負責人 choices for this project only: its Leader, people already assigned on its
- * trades, and ids saved on the project. Another project's people are not included.
+ * People stored on this project: its Leader, current trade assignees, and ids
+ * saved on the project. Choosing someone does not add them to any other project.
  */
 export function projectAssigneeIds(data: AppData, project: Project): string[] {
   const docs = splitProjectNotes(project.notes);
