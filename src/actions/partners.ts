@@ -3,19 +3,20 @@
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireSession, isOwner } from "@/lib/auth";
+import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
 import { updateData } from "@/lib/store";
 
 export async function createPartnerAction(formData: FormData) {
   const session = await requireSession();
-  if (!isOwner(session)) throw new Error("無權限");
+  if (!isAdmin(session)) throw new Error("無權限");
 
   const companyName = String(formData.get("companyName") || "").trim();
   const name = String(formData.get("name") || "").trim();
   const phoneE164 = String(formData.get("phoneE164") || "").trim();
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
+  const orgId = String(formData.get("orgId") || "");
 
   if (!companyName) throw new Error("工程公司名稱（必填）");
   if (!name) throw new Error("負責人姓名（必填）");
@@ -25,12 +26,15 @@ export async function createPartnerAction(formData: FormData) {
   const passwordHash = await hash(password, 10);
 
   await updateData((data) => {
+    if (!data.organizations.some((org) => org.id === orgId)) {
+      throw new Error("請選擇工程公司");
+    }
     if (data.users.some((u) => u.email.toLowerCase() === email)) {
       throw new Error("此電郵已存在");
     }
     data.users.push({
       id: createId("user"),
-      orgId: session.orgId,
+      orgId,
       email,
       name,
       companyName,
@@ -47,7 +51,7 @@ export async function createPartnerAction(formData: FormData) {
 
 export async function updatePartnerAction(formData: FormData) {
   const session = await requireSession();
-  if (!isOwner(session)) throw new Error("無權限");
+  if (!canManageProjects(session)) throw new Error("無權限");
 
   const userId = String(formData.get("userId") || "");
   const companyName = String(formData.get("companyName") || "").trim();
@@ -64,8 +68,8 @@ export async function updatePartnerAction(formData: FormData) {
     const user = data.users.find(
       (u) =>
         u.id === userId &&
-        u.orgId === session.orgId &&
-        u.roleDefault === "trade_lead",
+        u.roleDefault === "trade_lead" &&
+        (isAdmin(session) || u.orgId === session.orgId),
     );
     if (!user) throw new Error("找不到負責人");
     if (
@@ -79,7 +83,7 @@ export async function updatePartnerAction(formData: FormData) {
     user.name = name;
     user.phoneE164 = phoneE164;
     user.email = email;
-    if (password.length >= 6) {
+    if (isAdmin(session) && password.length >= 6) {
       user.passwordHash = await hash(password, 10);
     }
   });

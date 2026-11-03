@@ -1,23 +1,25 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requireSession, isOwner } from "@/lib/auth";
+import { isAdmin, requireSession } from "@/lib/auth";
+import { roleLabel } from "@/lib/labels";
+import { getOrganization } from "@/lib/permissions";
 import { readData } from "@/lib/store";
-
-const ROLE_LABEL = {
-  owner: "老闆（總協調）",
-  trade_lead: "工種負責人",
-} as const;
 
 export default async function AccountsPage() {
   const user = await requireSession();
-  if (!isOwner(user)) redirect("/me");
+  if (!isAdmin(user)) redirect("/me");
   const data = await readData();
-  const people = data.users
-    .filter((account) => account.orgId === user.orgId)
-    .sort((a, b) => {
-      if (a.roleDefault !== b.roleDefault) return a.roleDefault === "owner" ? -1 : 1;
-      return a.name.localeCompare(b.name, "zh-Hant");
-    });
+  const roleRank = (role: string) => {
+    if (role === "admin") return 0;
+    if (role === "owner") return 1;
+    return 2;
+  };
+  const people = [...data.users].sort((a, b) => {
+    if (roleRank(a.roleDefault) !== roleRank(b.roleDefault)) {
+      return roleRank(a.roleDefault) - roleRank(b.roleDefault);
+    }
+    return a.name.localeCompare(b.name, "zh-Hant");
+  });
 
   return (
     <div className="page">
@@ -28,21 +30,24 @@ export default async function AccountsPage() {
         </Link>
       </header>
       <p className="secondary text-sm mb-4">
-        由老闆建立登入。帳號只屬於本公司，公開註冊已關閉。
+        系統管理員建立登入。公開註冊已關閉。老闆只看本公司，項目成員只看自己參與的工程。
       </p>
       <div className="list">
-        {people.map((account) => (
-          <div key={account.id} className="list-row">
-            <div className="list-row-main">
-              <h2 className="list-row-title">{account.name}</h2>
-              <div className="list-row-meta">
-                <span>{ROLE_LABEL[account.roleDefault]}</span>
-                <span>{account.email}</span>
-                {account.companyName ? <span>{account.companyName}</span> : null}
+        {people.map((account) => {
+          const org = getOrganization(data, account.orgId);
+          return (
+            <div key={account.id} className="list-row">
+              <div className="list-row-main">
+                <h2 className="list-row-title">{account.name}</h2>
+                <div className="list-row-meta">
+                  <span>{roleLabel[account.roleDefault]}</span>
+                  <span>{account.email}</span>
+                  <span>{org?.name || account.companyName || "未分公司"}</span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
+import { canManageProjects, isAdmin, isOwner, type SessionUser } from "./auth";
 import type { AppData, Project, ProjectTrade, User } from "./types";
-import { isOwner, type SessionUser } from "./auth";
 
 export function orgUsers(data: AppData, orgId: string): User[] {
   return data.users.filter((u) => u.orgId === orgId);
@@ -9,7 +9,13 @@ export function orgProjects(data: AppData, orgId: string): Project[] {
   return data.projects.filter((p) => p.orgId === orgId);
 }
 
+/** Admin is not limited to one company. Everyone else stays inside their own. */
+export function inCompany(user: SessionUser, orgId: string): boolean {
+  return isAdmin(user) || user.orgId === orgId;
+}
+
 export function visibleProjects(data: AppData, user: SessionUser) {
+  if (isAdmin(user)) return data.projects;
   const inOrg = orgProjects(data, user.orgId);
   if (isOwner(user)) return inOrg;
   const ids = new Set(
@@ -26,7 +32,7 @@ export function canAccessProject(
   projectId: string,
 ): boolean {
   const project = data.projects.find((p) => p.id === projectId);
-  if (!project || project.orgId !== user.orgId) return false;
+  if (!project || !inCompany(user, project.orgId)) return false;
   return visibleProjects(data, user).some((p) => p.id === projectId);
 }
 
@@ -36,8 +42,8 @@ export function canAccessTrade(
   trade: ProjectTrade,
 ): boolean {
   const project = data.projects.find((p) => p.id === trade.projectId);
-  if (!project || project.orgId !== user.orgId) return false;
-  if (isOwner(user)) return true;
+  if (!project || !inCompany(user, project.orgId)) return false;
+  if (canManageProjects(user)) return true;
   return trade.assigneeUserId === user.id;
 }
 
@@ -55,16 +61,29 @@ export function visibleTradesForProject(
   projectId: string,
 ) {
   const project = data.projects.find((p) => p.id === projectId);
-  if (!project || project.orgId !== user.orgId) return [];
+  if (!project || !inCompany(user, project.orgId)) return [];
   const trades = data.trades
     .filter((t) => t.projectId === projectId)
     .sort((a, b) => a.sortOrder - b.sortOrder);
-  if (isOwner(user)) return trades;
+  if (canManageProjects(user)) return trades;
   return trades.filter((t) => t.assigneeUserId === user.id);
 }
 
+/** A project this user may manage: any company for admin, own company for an owner. */
+export function managedProject(
+  data: AppData,
+  user: SessionUser,
+  projectId: string,
+): Project | undefined {
+  const project = data.projects.find((p) => p.id === projectId);
+  if (!project || !canManageProjects(user) || !inCompany(user, project.orgId)) {
+    return undefined;
+  }
+  return project;
+}
+
 export function canManageProcurement(user: SessionUser): boolean {
-  return isOwner(user);
+  return canManageProjects(user);
 }
 
 export function canReportProcurement(
@@ -72,7 +91,7 @@ export function canReportProcurement(
   user: SessionUser,
   tradeId: string | null,
 ): boolean {
-  if (isOwner(user)) return true;
+  if (canManageProjects(user)) return true;
   if (!tradeId) return false;
   const trade = data.trades.find((t) => t.id === tradeId);
   if (!trade) return false;

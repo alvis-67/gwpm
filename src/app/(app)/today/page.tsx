@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { TradeStatusChip } from "@/components/StatusChip";
 import { DependencyBanner } from "@/components/DependencyBanner";
-import { requireSession, isOwner } from "@/lib/auth";
+import { canManageProjects, requireSession } from "@/lib/auth";
 import { formatDateZh, todayISO, tomorrowISO } from "@/lib/dates";
 import { evaluateDependency } from "@/lib/dependencies";
 import { visibleProjects, visibleTradesForProject } from "@/lib/permissions";
@@ -12,7 +12,7 @@ import { buildTomorrowEntryMessage, buildWhatsAppUrl } from "@/lib/whatsapp";
 export default async function TodayPage() {
   const user = await requireSession();
   const data = await readData();
-  const owner = isOwner(user);
+  const owner = canManageProjects(user);
   const today = todayISO();
   const tomorrow = tomorrowISO();
 
@@ -30,9 +30,13 @@ export default async function TodayPage() {
 
   const tomorrowEntries = owner
     ? data.trades
-        .filter((t) => t.plannedStart === tomorrow)
+        .filter(
+          (t) =>
+            t.plannedStart === tomorrow &&
+            projects.some((p) => p.id === t.projectId),
+        )
         .map((trade) => {
-          const project = data.projects.find((p) => p.id === trade.projectId)!;
+          const project = projects.find((p) => p.id === trade.projectId)!;
           const assignee = data.users.find((u) => u.id === trade.assigneeUserId);
           const hint = evaluateDependency(data, trade);
           const message = buildTomorrowEntryMessage({

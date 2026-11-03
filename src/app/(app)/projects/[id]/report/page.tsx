@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PrintButton } from "@/components/PrintButton";
 import { TradeStatusChip } from "@/components/StatusChip";
-import { requireSession, isOwner } from "@/lib/auth";
+import { canManageProjects, requireSession } from "@/lib/auth";
 import { formatDateTimeZh, formatDateZh } from "@/lib/dates";
 import { PRODUCT_NAME, projectStatusLabel, tradeStatusLabel } from "@/lib/labels";
 import { canAccessProject } from "@/lib/permissions";
@@ -18,7 +18,7 @@ export default async function ReportPage({
   const { id } = await params;
   const sp = await searchParams;
   const user = await requireSession();
-  if (!isOwner(user)) redirect(`/projects/${id}`);
+  if (!canManageProjects(user)) redirect(`/projects/${id}`);
   const data = await readData();
   if (!canAccessProject(data, user, id)) notFound();
   const project = data.projects.find((p) => p.id === id);

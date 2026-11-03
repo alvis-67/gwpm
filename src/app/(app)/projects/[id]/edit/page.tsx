@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { updateProjectAction } from "@/actions/projects";
-import { requireSession, isOwner } from "@/lib/auth";
+import { canManageProjects, requireSession } from "@/lib/auth";
 import { projectStatusLabel } from "@/lib/labels";
 import { canAccessProject } from "@/lib/permissions";
 import { readData } from "@/lib/store";
@@ -14,7 +14,7 @@ export default async function EditProjectPage({
 }) {
   const { id } = await params;
   const user = await requireSession();
-  if (!isOwner(user)) redirect(`/projects/${id}`);
+  if (!canManageProjects(user)) redirect(`/projects/${id}`);
   const data = await readData();
   if (!canAccessProject(data, user, id)) notFound();
   const project = data.projects.find((p) => p.id === id);

@@ -1,4 +1,4 @@
-export type Role = "owner" | "trade_lead";
+export type Role = "admin" | "owner" | "trade_lead";
 
 export type ProjectStatus = "planning" | "active" | "completed" | "archived";
 

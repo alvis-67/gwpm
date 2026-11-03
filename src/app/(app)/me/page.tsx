@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
-import { updateProfileAction } from "@/actions/profile";
-import { requireSession, isOwner } from "@/lib/auth";
-import { PRODUCT_FULL, PRODUCT_NAME } from "@/lib/labels";
+import { changePasswordAction, updateProfileAction } from "@/actions/profile";
+import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
+import { PRODUCT_FULL, PRODUCT_NAME, roleLabel } from "@/lib/labels";
 import { getOrganization } from "@/lib/permissions";
 import { persistenceLabel, readData } from "@/lib/store";
 
 export default async function MePage() {
   const user = await requireSession();
-  const owner = isOwner(user);
+  const admin = isAdmin(user);
+  const manager = canManageProjects(user);
   const data = await readData();
   const org = getOrganization(data, user.orgId);
   const storeMode = persistenceLabel();
@@ -34,32 +35,38 @@ export default async function MePage() {
           <p className="font-medium mb-0">{user.name}</p>
           <p className="secondary text-sm mb-0">{user.email}</p>
           <p className="muted text-xs mb-0">
-            {owner ? "老闆（總協調）" : "工種負責人"}
+            {roleLabel[user.roleDefault]}
             {org ? `｜${org.name}` : ""}
           </p>
         </div>
       </div>
 
-      {owner && (
+      {(admin || manager) && (
         <>
           <h2 className="section-title">管理</h2>
           <div className="list mb-4">
-            <Link href="/accounts" className="list-row">
-              <div className="list-row-main">
-                <h2 className="list-row-title">帳號</h2>
-                <p className="secondary text-sm mb-0">
-                  建立本公司登入（電郵、姓名、角色、密碼）
-                </p>
-              </div>
-              <span className="muted">›</span>
-            </Link>
-            <Link href="/partners" className="list-row">
-              <div className="list-row-main">
-                <h2 className="list-row-title">工程公司／負責人</h2>
-                <p className="secondary text-sm mb-0">新增或編輯分包公司與現場負責人</p>
-              </div>
-              <span className="muted">›</span>
-            </Link>
+            {admin && (
+              <Link href="/accounts" className="list-row">
+                <div className="list-row-main">
+                  <h2 className="list-row-title">帳號</h2>
+                  <p className="secondary text-sm mb-0">
+                    建立工程公司老闆或項目成員的登入
+                  </p>
+                </div>
+                <span className="muted">›</span>
+              </Link>
+            )}
+            {manager && (
+              <Link href="/partners" className="list-row">
+                <div className="list-row-main">
+                  <h2 className="list-row-title">工程公司／負責人</h2>
+                  <p className="secondary text-sm mb-0">
+                    查看參與工程的公司與負責人
+                  </p>
+                </div>
+                <span className="muted">›</span>
+              </Link>
+            )}
           </div>
         </>
       )}
@@ -83,6 +90,21 @@ export default async function MePage() {
         </div>
         <button type="submit" className="btn btn-primary">
           儲存
+        </button>
+      </form>
+
+      <h2 className="section-title">變更密碼</h2>
+      <form action={changePasswordAction}>
+        <div className="field">
+          <label htmlFor="password">新密碼（至少 6 位）</label>
+          <input id="password" name="password" type="password" required minLength={6} autoComplete="new-password" />
+        </div>
+        <div className="field">
+          <label htmlFor="confirm">再輸入一次</label>
+          <input id="confirm" name="confirm" type="password" required minLength={6} autoComplete="new-password" />
+        </div>
+        <button type="submit" className="btn btn-secondary">
+          更新密碼
         </button>
       </form>
 

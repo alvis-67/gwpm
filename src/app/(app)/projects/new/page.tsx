@@ -1,10 +1,13 @@
 import { redirect } from "next/navigation";
 import { createProjectAction } from "@/actions/projects";
-import { requireSession, isOwner } from "@/lib/auth";
+import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
+import { readData } from "@/lib/store";
 
 export default async function NewProjectPage() {
   const user = await requireSession();
-  if (!isOwner(user)) redirect("/projects");
+  if (!canManageProjects(user)) redirect("/projects");
+  const admin = isAdmin(user);
+  const data = admin ? await readData() : null;
 
   return (
     <div className="page">
@@ -12,6 +15,21 @@ export default async function NewProjectPage() {
         <h1 className="page-title">建立工程案</h1>
       </header>
       <form action={createProjectAction}>
+        {admin && data && (
+          <div className="field">
+            <label htmlFor="orgId">工程公司（必填）</label>
+            <select id="orgId" name="orgId" required defaultValue="">
+              <option value="" disabled>
+                選擇承接此工程的公司
+              </option>
+              {data.organizations.map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="field">
           <label htmlFor="name">工程案名稱（必填）</label>
           <input id="name" name="name" required />

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { updatePartnerAction } from "@/actions/partners";
-import { requireSession, isOwner } from "@/lib/auth";
+import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 import { readData } from "@/lib/store";
 
 export default async function EditPartnerPage({
@@ -11,13 +11,14 @@ export default async function EditPartnerPage({
 }) {
   const { id } = await params;
   const session = await requireSession();
-  if (!isOwner(session)) redirect("/me");
+  if (!canManageProjects(session)) redirect("/me");
+  const admin = isAdmin(session);
   const data = await readData();
   const lead = data.users.find(
     (u) =>
       u.id === id &&
-      u.orgId === session.orgId &&
-      u.roleDefault === "trade_lead",
+      u.roleDefault === "trade_lead" &&
+      (admin || u.orgId === session.orgId),
   );
   if (!lead) notFound();
 
@@ -62,10 +63,12 @@ export default async function EditPartnerPage({
             defaultValue={lead.email}
           />
         </div>
-        <div className="field">
-          <label htmlFor="password">重設密碼（留空＝不更改）</label>
-          <input id="password" name="password" type="password" minLength={6} />
-        </div>
+        {admin && (
+          <div className="field">
+            <label htmlFor="password">重設密碼（留空＝不更改）</label>
+            <input id="password" name="password" type="password" minLength={6} />
+          </div>
+        )}
         <button type="submit" className="btn btn-primary btn-block md:max-w-xs">
           儲存
         </button>

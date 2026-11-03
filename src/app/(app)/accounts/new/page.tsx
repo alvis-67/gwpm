@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requireSession, isOwner } from "@/lib/auth";
+import { isAdmin, requireSession } from "@/lib/auth";
+import { readData } from "@/lib/store";
 import { NewAccountForm } from "./form";
 
 export default async function NewAccountPage() {
   const user = await requireSession();
-  if (!isOwner(user)) redirect("/me");
+  if (!isAdmin(user)) redirect("/me");
+  const data = await readData();
+  const organizations = [...data.organizations].sort((a, b) =>
+    a.name.localeCompare(b.name, "zh-Hant"),
+  );
 
   return (
     <div className="page">
@@ -14,9 +19,9 @@ export default async function NewAccountPage() {
       </p>
       <h1 className="page-title mb-2">建立帳號</h1>
       <p className="secondary text-sm mb-4">
-        只加入本公司。對方用你設定的電郵與密碼登入，不能自行註冊。
+        對方用你設定的電郵與密碼登入，不能自行註冊。
       </p>
-      <NewAccountForm />
+      <NewAccountForm organizations={organizations} />
     </div>
   );
 }

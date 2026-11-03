@@ -1,8 +1,15 @@
 import type {
   ProcurementStatus,
   ProjectStatus,
+  Role,
   TradeStatus,
 } from "./types";
+
+export const roleLabel: Record<Role, string> = {
+  admin: "系統管理員",
+  owner: "工程公司老闆",
+  trade_lead: "項目成員",
+};
 
 export const PRODUCT_NAME = "Gwpm";
 export const PRODUCT_FULL = "Goodwill Project Management System";

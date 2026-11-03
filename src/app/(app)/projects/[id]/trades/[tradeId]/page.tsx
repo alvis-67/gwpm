@@ -9,7 +9,7 @@ import {
 import { DependencyBanner } from "@/components/DependencyBanner";
 import { TradeStatusControl } from "@/components/TradeStatusControl";
 import { ProcurementStatusChip } from "@/components/StatusChip";
-import { requireSession, isOwner } from "@/lib/auth";
+import { canManageProjects, requireSession } from "@/lib/auth";
 import { formatDateZh } from "@/lib/dates";
 import { evaluateDependency } from "@/lib/dependencies";
 import { formatLeadLabel } from "@/lib/format";
@@ -45,14 +45,14 @@ export default async function TradeDetailPage({
     );
   }
 
-  const owner = isOwner(user);
+  const owner = canManageProjects(user);
   const canEdit = canEditTrade(data, user, trade);
   const hint = evaluateDependency(data, trade);
   const assignee = data.users.find((u) => u.id === trade.assigneeUserId);
   const procs = data.procurements.filter((p) => p.tradeId === tradeId);
   const shortage = procs.filter((p) => p.status === "shortage").length;
   const leads = data.users.filter(
-    (u) => u.roleDefault === "trade_lead" && u.orgId === user.orgId,
+    (u) => u.roleDefault === "trade_lead" && u.orgId === project.orgId,
   );
 
   return (

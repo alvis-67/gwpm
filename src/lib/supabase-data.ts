@@ -16,6 +16,7 @@ import {
   type WorkLog,
   type WorkLogPhoto,
 } from "./types";
+import { ADMIN_EMAIL } from "./admin-account";
 
 /** Keys `gwpm_replace_data` / `gwpm_load_data` exchange. Camel case matches AppData. */
 export const SUPABASE_PAYLOAD_KEYS = [
@@ -40,7 +41,7 @@ const NOTIFICATION_TYPES: readonly NotificationType[] = [
   "dependency_ready",
 ];
 
-const ROLES: readonly Role[] = ["owner", "trade_lead"];
+const ROLES: readonly Role[] = ["admin", "owner", "trade_lead"];
 
 export type SupabasePayload = {
   organizations: Organization[];
@@ -104,14 +105,16 @@ function mapOrganization(row: Record<string, unknown>): Organization {
 }
 
 function mapUser(row: Record<string, unknown>): User {
+  const email = asString(row.email);
+  const stored = oneOf(row.roleDefault, ROLES, "roleDefault");
   return {
     id: asString(row.id),
     orgId: asString(row.orgId),
-    email: asString(row.email),
+    email,
     name: asString(row.name),
     companyName: asString(row.companyName),
     phoneE164: asString(row.phoneE164),
-    roleDefault: oneOf(row.roleDefault, ROLES, "roleDefault"),
+    roleDefault: email.toLowerCase() === ADMIN_EMAIL ? "admin" : stored,
     passwordHash: asString(row.passwordHash),
     createdAt: asString(row.createdAt),
   };
@@ -222,7 +225,12 @@ function mapNotification(row: Record<string, unknown>): Notification {
 export function toSupabasePayload(data: AppData): SupabasePayload {
   return {
     organizations: data.organizations,
-    users: data.users,
+    // Databases created before the admin role reject role "admin" until
+    // schema.sql is applied. Keep that account as owner in the column and
+    // promote it by email on read, so a save cannot fail the check.
+    users: data.users.map((user) =>
+      user.roleDefault === "admin" ? { ...user, roleDefault: "owner" as const } : user,
+    ),
     projects: data.projects,
     trades: data.trades,
     dependencies: data.dependencies,

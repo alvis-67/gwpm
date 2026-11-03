@@ -2,15 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireSession, isOwner } from "@/lib/auth";
+import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
+import { managedProject } from "@/lib/permissions";
 import { updateData } from "@/lib/store";
 import { DEFAULT_TRADE_TEMPLATES, type ProjectStatus } from "@/lib/types";
 import { pushNotification } from "@/lib/notifications";
 
 export async function createProjectAction(formData: FormData) {
   const user = await requireSession();
-  if (!isOwner(user)) throw new Error("無權限");
+  if (!canManageProjects(user)) throw new Error("無權限");
 
   const name = String(formData.get("name") || "").trim();
   const location = String(formData.get("location") || "").trim();
@@ -26,9 +27,16 @@ export async function createProjectAction(formData: FormData) {
   const now = new Date().toISOString();
 
   await updateData((data) => {
+    let orgId = user.orgId;
+    if (isAdmin(user)) {
+      orgId = String(formData.get("orgId") || "");
+      if (!data.organizations.some((org) => org.id === orgId)) {
+        throw new Error("請選擇工程公司");
+      }
+    }
     data.projects.unshift({
       id: projectId,
-      orgId: user.orgId,
+      orgId,
       name,
       location,
       clientDisplayName,
@@ -67,9 +75,9 @@ export async function updateProjectStatusAction(
   status: ProjectStatus,
 ) {
   const user = await requireSession();
-  if (!isOwner(user)) throw new Error("無權限");
+  if (!canManageProjects(user)) throw new Error("無權限");
   await updateData((data) => {
-    const p = data.projects.find((x) => x.id === projectId && x.orgId === user.orgId);
+    const p = managedProject(data, user, projectId);
     if (!p) throw new Error("找不到工程案");
     p.status = status;
     p.updatedAt = new Date().toISOString();
@@ -80,7 +88,7 @@ export async function updateProjectStatusAction(
 
 export async function updateProjectAction(formData: FormData) {
   const user = await requireSession();
-  if (!isOwner(user)) throw new Error("無權限");
+  if (!canManageProjects(user)) throw new Error("無權限");
   const projectId = String(formData.get("projectId") || "");
   const name = String(formData.get("name") || "").trim();
   if (!name) throw new Error("工程案名稱（必填）");
@@ -92,7 +100,7 @@ export async function updateProjectAction(formData: FormData) {
   const status = String(formData.get("status") || "planning") as ProjectStatus;
 
   await updateData((data) => {
-    const p = data.projects.find((x) => x.id === projectId && x.orgId === user.orgId);
+    const p = managedProject(data, user, projectId);
     if (!p) throw new Error("找不到工程案");
     p.name = name;
     p.location = location;
@@ -110,7 +118,7 @@ export async function updateProjectAction(formData: FormData) {
 
 export async function renameTradeAction(formData: FormData) {
   const user = await requireSession();
-  if (!isOwner(user)) throw new Error("無權限");
+  if (!canManageProjects(user)) throw new Error("無權限");
   const tradeId = String(formData.get("tradeId") || "");
   const name = String(formData.get("name") || "").trim();
   if (!name) throw new Error("工種名稱（必填）");
@@ -118,9 +126,7 @@ export async function renameTradeAction(formData: FormData) {
   await updateData((data) => {
     const trade = data.trades.find((t) => t.id === tradeId);
     if (!trade) throw new Error("找不到工種");
-    const project = data.projects.find(
-      (p) => p.id === trade.projectId && p.orgId === user.orgId,
-    );
+    const project = managedProject(data, user, trade.projectId);
     if (!project) throw new Error("無權限");
     trade.name = name;
     projectId = trade.projectId;
@@ -131,15 +137,13 @@ export async function renameTradeAction(formData: FormData) {
 
 export async function deleteTradeAction(formData: FormData) {
   const user = await requireSession();
-  if (!isOwner(user)) throw new Error("無權限");
+  if (!canManageProjects(user)) throw new Error("無權限");
   const tradeId = String(formData.get("tradeId") || "");
   let projectId = "";
   await updateData((data) => {
     const trade = data.trades.find((t) => t.id === tradeId);
     if (!trade) throw new Error("找不到工種");
-    const project = data.projects.find(
-      (p) => p.id === trade.projectId && p.orgId === user.orgId,
-    );
+    const project = managedProject(data, user, trade.projectId);
     if (!project) throw new Error("無權限");
     projectId = trade.projectId;
     const logIds = new Set(
@@ -162,22 +166,20 @@ export async function deleteTradeAction(formData: FormData) {
 
 export async function assignTradeAction(formData: FormData) {
   const user = await requireSession();
-  if (!isOwner(user)) throw new Error("無權限");
+  if (!canManageProjects(user)) throw new Error("無權限");
   const tradeId = String(formData.get("tradeId") || "");
   const assigneeUserId = String(formData.get("assigneeUserId") || "") || null;
 
   await updateData((data) => {
     const trade = data.trades.find((t) => t.id === tradeId);
     if (!trade) throw new Error("找不到工種");
-    const project = data.projects.find(
-      (p) => p.id === trade.projectId && p.orgId === user.orgId,
-    );
+    const project = managedProject(data, user, trade.projectId);
     if (!project) throw new Error("無權限");
     if (assigneeUserId) {
       const lead = data.users.find(
         (u) =>
           u.id === assigneeUserId &&
-          u.orgId === user.orgId &&
+          u.orgId === project.orgId &&
           u.roleDefault === "trade_lead",
       );
       if (!lead) throw new Error("負責人必須屬於本公司");
@@ -202,14 +204,12 @@ export async function assignTradeAction(formData: FormData) {
 
 export async function updateTradeScheduleAction(formData: FormData) {
   const user = await requireSession();
-  if (!isOwner(user)) throw new Error("無權限");
+  if (!canManageProjects(user)) throw new Error("無權限");
   const tradeId = String(formData.get("tradeId") || "");
   await updateData((data) => {
     const trade = data.trades.find((t) => t.id === tradeId);
     if (!trade) throw new Error("找不到工種");
-    const project = data.projects.find(
-      (p) => p.id === trade.projectId && p.orgId === user.orgId,
-    );
+    const project = managedProject(data, user, trade.projectId);
     if (!project) throw new Error("無權限");
     trade.plannedStart = String(formData.get("plannedStart") || "");
     trade.plannedEnd = String(formData.get("plannedEnd") || "");
@@ -221,14 +221,12 @@ export async function updateTradeScheduleAction(formData: FormData) {
 
 export async function addTradeAction(formData: FormData) {
   const user = await requireSession();
-  if (!isOwner(user)) throw new Error("無權限");
+  if (!canManageProjects(user)) throw new Error("無權限");
   const projectId = String(formData.get("projectId") || "");
   const name = String(formData.get("name") || "").trim();
   if (!name) throw new Error("工種名稱（必填）");
   await updateData((data) => {
-    const project = data.projects.find(
-      (p) => p.id === projectId && p.orgId === user.orgId,
-    );
+    const project = managedProject(data, user, projectId);
     if (!project) throw new Error("找不到工程案");
     const max = data.trades
       .filter((t) => t.projectId === projectId)
@@ -252,7 +250,7 @@ export async function addTradeAction(formData: FormData) {
 
 export async function addDependencyAction(formData: FormData) {
   const user = await requireSession();
-  if (!isOwner(user)) throw new Error("無權限");
+  if (!canManageProjects(user)) throw new Error("無權限");
   const projectId = String(formData.get("projectId") || "");
   const tradeId = String(formData.get("tradeId") || "");
   const dependsOnTradeId = String(formData.get("dependsOnTradeId") || "");
@@ -261,9 +259,7 @@ export async function addDependencyAction(formData: FormData) {
     throw new Error("請選擇有效的前後置工種");
   }
   await updateData((data) => {
-    const project = data.projects.find(
-      (p) => p.id === projectId && p.orgId === user.orgId,
-    );
+    const project = managedProject(data, user, projectId);
     if (!project) throw new Error("找不到工程案");
     data.dependencies.push({
       id: createId("dep"),
@@ -278,13 +274,11 @@ export async function addDependencyAction(formData: FormData) {
 
 export async function deleteDependencyAction(formData: FormData) {
   const user = await requireSession();
-  if (!isOwner(user)) throw new Error("無權限");
+  if (!canManageProjects(user)) throw new Error("無權限");
   const id = String(formData.get("id") || "");
   const projectId = String(formData.get("projectId") || "");
   await updateData((data) => {
-    const project = data.projects.find(
-      (p) => p.id === projectId && p.orgId === user.orgId,
-    );
+    const project = managedProject(data, user, projectId);
     if (!project) throw new Error("找不到工程案");
     data.dependencies = data.dependencies.filter((d) => d.id !== id);
   });

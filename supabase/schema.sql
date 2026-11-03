@@ -27,7 +27,7 @@ create table if not exists users (
   name text not null,
   company_name text not null default '',
   phone_e164 text not null default '',
-  role_default text not null check (role_default in ('owner', 'trade_lead')),
+  role_default text not null check (role_default in ('admin', 'owner', 'trade_lead')),
   password_hash text not null,
   created_at timestamptz not null default now()
 );
@@ -298,6 +298,7 @@ set search_path = public
 as $$
 declare
   current_rev bigint;
+  r record;
 begin
   insert into gwpm_meta (id, revision) values (1, 0)
   on conflict (id) do nothing;
@@ -310,6 +311,23 @@ begin
   if expected_revision is not null and current_rev is distinct from expected_revision then
     raise exception 'revision_conflict' using errcode = '40001';
   end if;
+
+  -- Older databases only allowed owner and trade_lead. Widen that check
+  -- before inserting so an admin row is accepted. WHERE true is not involved.
+  for r in
+    select con.conname
+    from pg_constraint con
+    join pg_class rel on rel.oid = con.conrelid
+    join pg_namespace nsp on nsp.oid = rel.relnamespace
+    where nsp.nspname = 'public'
+      and rel.relname = 'users'
+      and con.contype = 'c'
+      and pg_get_constraintdef(con.oid) ilike '%role_default%'
+  loop
+    execute format('alter table users drop constraint %I', r.conname);
+  end loop;
+  alter table users add constraint users_role_default_check
+    check (role_default in ('admin', 'owner', 'trade_lead'));
 
   -- Supabase loads pg-safeupdate for PostgREST. It rejects DELETE when
   -- jointree->quals is null ("DELETE requires a WHERE clause"). WHERE true

@@ -5,7 +5,7 @@ import {
   updateProcurementStatusAction,
 } from "@/actions/procurement";
 import { ProcurementStatusChip } from "@/components/StatusChip";
-import { requireSession, isOwner } from "@/lib/auth";
+import { canManageProjects, requireSession } from "@/lib/auth";
 import { procurementStatusLabel } from "@/lib/labels";
 import {
   canAccessProject,
@@ -26,7 +26,7 @@ export default async function ProcurementPage({
   if (!canAccessProject(data, user, id)) notFound();
   const project = data.projects.find((p) => p.id === id);
   if (!project) notFound();
-  const owner = isOwner(user);
+  const owner = canManageProjects(user);
   const trades = visibleTradesForProject(data, user, id);
   const tradeIds = new Set(trades.map((t) => t.id));
 

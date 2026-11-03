@@ -1,5 +1,11 @@
 import { hash } from "bcryptjs";
 import { addDays, format, startOfDay } from "date-fns";
+import {
+  ADMIN_EMAIL,
+  ADMIN_ORG_ID,
+  ADMIN_PASSWORD_HASH,
+  ADMIN_USER_ID,
+} from "./admin-account";
 import type { AppData } from "./types";
 import { createId } from "./ids";
 
@@ -105,6 +111,11 @@ export async function buildSeedData(): Promise<AppData> {
     version: 2,
     organizations: [
       {
+        id: ADMIN_ORG_ID,
+        name: "Gwpm",
+        createdAt: now,
+      },
+      {
         id: infunityOrgId,
         name: "Infunity Company Limited",
         createdAt: now,
@@ -116,6 +127,17 @@ export async function buildSeedData(): Promise<AppData> {
       },
     ],
     users: [
+      {
+        id: ADMIN_USER_ID,
+        orgId: ADMIN_ORG_ID,
+        email: ADMIN_EMAIL,
+        name: "系統管理員",
+        companyName: "Gwpm",
+        phoneE164: "",
+        roleDefault: "admin",
+        passwordHash: ADMIN_PASSWORD_HASH,
+        createdAt: now,
+      },
       {
         id: ownerId,
         orgId: infunityOrgId,

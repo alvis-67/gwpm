@@ -135,6 +135,27 @@ assert.equal(loaded.data.procurements[0].qty, 12);
 assert.deepEqual(loaded.data.photos, []);
 assert.equal(loaded.data.notifications[0].readAt, null);
 
+const adminRoundTrip = structuredClone(sample);
+adminRoundTrip.users.push({
+  id: "user_gwpm_admin",
+  orgId: "org_gwpm",
+  email: "admin@gwpm.com",
+  name: "系統管理員",
+  companyName: "Gwpm",
+  phoneE164: "",
+  roleDefault: "admin",
+  passwordHash: "$2a$10$admin",
+  createdAt: "2026-11-03T00:00:00.000Z",
+});
+const adminPayload = toSupabasePayload(adminRoundTrip);
+assert.equal(adminPayload.users.find((user) => user.email === "admin@gwpm.com")?.roleDefault, "owner");
+const adminLoaded = fromSupabasePayload({ revision: 4, ...adminPayload });
+assert.equal(
+  adminLoaded.data.users.find((user) => user.email === "admin@gwpm.com")?.roleDefault,
+  "admin",
+);
+assert.equal(adminLoaded.data.users.find((user) => user.email === "owner@demo.local")?.roleDefault, "owner");
+
 assert.equal(persistenceLabel("local"), "本地 JSON（未連接 Supabase）");
 assert.equal(persistenceLabel("blob"), "Vercel Blob（可寫）");
 assert.equal(persistenceLabel("supabase"), "Supabase（多租戶）");
@@ -162,6 +183,7 @@ assert.equal(supabaseConfigured(), true);
 assert.equal(persistenceMode(), "supabase");
 
 const schema = readFileSync(new URL("../supabase/schema.sql", import.meta.url), "utf8");
+assert.match(schema, /'admin', 'owner', 'trade_lead'/);
 assert.match(schema, /function gwpm_load_data/);
 assert.match(schema, /function gwpm_replace_data/);
 assert.match(schema, /enable row level security/);

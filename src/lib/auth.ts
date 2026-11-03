@@ -98,6 +98,15 @@ export async function loginWithPassword(
   return { ok: true, user };
 }
 
-export function isOwner(user: SessionUser): boolean {
+export function isAdmin(user: { roleDefault: Role }): boolean {
+  return user.roleDefault === "admin";
+}
+
+export function isOwner(user: { roleDefault: Role }): boolean {
   return user.roleDefault === "owner";
+}
+
+/** Project management for a company. Admins can do this for every company. */
+export function canManageProjects(user: { roleDefault: Role }): boolean {
+  return isAdmin(user) || isOwner(user);
 }

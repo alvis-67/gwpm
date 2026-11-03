@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireSession, isOwner } from "@/lib/auth";
+import { canManageProjects, requireSession } from "@/lib/auth";
 import { formatDateZh } from "@/lib/dates";
 import { projectStatusLabel } from "@/lib/labels";
 import { visibleProjects } from "@/lib/permissions";
@@ -15,7 +15,7 @@ export default async function ProjectsPage({
   const sp = await searchParams;
   const user = await requireSession();
   const data = await readData();
-  const owner = isOwner(user);
+  const owner = canManageProjects(user);
   const statusFilter = (sp.status || "all") as ProjectStatus | "all";
 
   let projects = visibleProjects(data, user).filter((p) => p.status !== "archived" || statusFilter === "archived");

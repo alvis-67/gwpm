@@ -18,7 +18,7 @@ export default async function HomePage() {
           登入
         </Link>
         <p className="secondary text-sm mt-6 mb-0">
-          登入只認本系統帳號，不認在 Supabase Authentication 建立的用戶。請用公司老闆帳號登入，再到「我的 → 帳號」建立電郵、姓名、角色和密碼。
+          登入只認本系統帳號，不認在 Supabase Authentication 建立的用戶。公開註冊已關閉，由系統管理員建立工程公司老闆和項目成員。
         </p>
       </div>
     </main>

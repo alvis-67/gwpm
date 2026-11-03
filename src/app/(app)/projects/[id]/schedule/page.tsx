@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TradeStatusChip } from "@/components/StatusChip";
-import { requireSession, isOwner } from "@/lib/auth";
+import { canManageProjects, requireSession } from "@/lib/auth";
 import { formatDateZh, todayISO, tomorrowISO } from "@/lib/dates";
 import { evaluateDependency } from "@/lib/dependencies";
 import { canAccessProject, visibleTradesForProject } from "@/lib/permissions";
@@ -45,7 +45,7 @@ export default async function SchedulePage({
       </p>
       <header className="page-header">
         <h1 className="page-title">排程</h1>
-        {isOwner(user) && (
+        {canManageProjects(user) && (
           <Link href={`/projects/${id}/dependencies`} className="btn btn-tertiary">
             依賴設定
           </Link>

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { addTradeAction } from "@/actions/projects";
 import { DependencyBanner } from "@/components/DependencyBanner";
 import { TradeStatusChip, ProjectStatusChip } from "@/components/StatusChip";
-import { requireSession, isOwner } from "@/lib/auth";
+import { canManageProjects, requireSession } from "@/lib/auth";
 import { formatDateTimeZh, formatDateZh } from "@/lib/dates";
 import { evaluateDependency, projectBlockedTrades } from "@/lib/dependencies";
 import { formatLeadLabel } from "@/lib/format";
@@ -26,7 +26,7 @@ export default async function ProjectOverviewPage({
   if (!canAccessProject(data, user, id)) notFound();
   const project = data.projects.find((p) => p.id === id);
   if (!project) notFound();
-  const owner = isOwner(user);
+  const owner = canManageProjects(user);
   const trades = visibleTradesForProject(data, user, id);
   const blocked = owner ? projectBlockedTrades(data, id) : [];
   const completed = trades.filter((t) => t.status === "completed").length;

@@ -1,5 +1,6 @@
 "use server";
 
+import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { createSession, requireSession } from "@/lib/auth";
 import { updateData } from "@/lib/store";
@@ -20,4 +21,20 @@ export async function updateProfileAction(formData: FormData) {
 
   revalidatePath("/me");
   revalidatePath("/today");
+}
+
+export async function changePasswordAction(formData: FormData) {
+  const session = await requireSession();
+  const next = String(formData.get("password") || "");
+  const confirm = String(formData.get("confirm") || "");
+  if (next.length < 6) throw new Error("密碼至少 6 位");
+  if (next !== confirm) throw new Error("兩次密碼不相同");
+
+  await updateData(async (data) => {
+    const user = data.users.find((item) => item.id === session.id);
+    if (!user) throw new Error("找不到使用者");
+    user.passwordHash = await hash(next, 10);
+  });
+
+  revalidatePath("/me");
 }

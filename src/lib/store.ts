@@ -2,6 +2,7 @@ import { put, list, del } from "@vercel/blob";
 import { promises as fs } from "fs";
 import path from "path";
 import type { AppData } from "./types";
+import { addPlatformAdmin, platformAdminPresent } from "./ensure-admin";
 import { buildSeedData } from "./seed";
 import { supabaseConfigured } from "./supabase";
 import {
@@ -119,13 +120,27 @@ function normalizeData(data: AppData): AppData {
   return data;
 }
 
+async function withPlatformAdmin(data: AppData): Promise<AppData> {
+  if (platformAdminPresent(data)) return data;
+  addPlatformAdmin(data);
+  try {
+    await writeData(data);
+  } catch (error) {
+    console.error(
+      "[gwpm] platform admin was not stored",
+      error instanceof Error ? error.message : "write failed",
+    );
+  }
+  return data;
+}
+
 export async function readData(): Promise<AppData> {
   if (supabaseConfigured()) {
-    return readSupabaseData();
+    return withPlatformAdmin(await readSupabaseData());
   }
 
   if (globalForStore.__gwpmMemory && !needsReseed(globalForStore.__gwpmMemory)) {
-    return structuredClone(normalizeData(globalForStore.__gwpmMemory));
+    return withPlatformAdmin(structuredClone(normalizeData(globalForStore.__gwpmMemory)));
   }
 
   let data: AppData | null = null;
@@ -143,7 +158,7 @@ export async function readData(): Promise<AppData> {
   }
 
   globalForStore.__gwpmMemory = structuredClone(data);
-  return structuredClone(data);
+  return withPlatformAdmin(structuredClone(data));
 }
 
 export async function writeData(data: AppData): Promise<void> {
