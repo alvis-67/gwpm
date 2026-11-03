@@ -3,6 +3,15 @@ import { promises as fs } from "fs";
 import path from "path";
 import type { AppData } from "./types";
 import { buildSeedData } from "./seed";
+import { supabaseConfigured } from "./supabase";
+import {
+  commitSupabase,
+  isRevisionConflict,
+  readSupabaseData,
+  revisionOf,
+  saveSupabaseUpload,
+  tagRevision,
+} from "./supabase-store";
 
 const LOCAL_DATA_PATH = path.join(process.cwd(), "data", "gwpm.json");
 const TMP_DATA_PATH = path.join("/tmp", "gwpm.json");
@@ -111,6 +120,10 @@ function normalizeData(data: AppData): AppData {
 }
 
 export async function readData(): Promise<AppData> {
+  if (supabaseConfigured()) {
+    return readSupabaseData();
+  }
+
   if (globalForStore.__gwpmMemory && !needsReseed(globalForStore.__gwpmMemory)) {
     return structuredClone(normalizeData(globalForStore.__gwpmMemory));
   }
@@ -135,9 +148,19 @@ export async function readData(): Promise<AppData> {
 
 export async function writeData(data: AppData): Promise<void> {
   const next = structuredClone(data);
-  globalForStore.__gwpmMemory = next;
+  const useSupabase = supabaseConfigured();
+  const supabaseRevision = useSupabase ? revisionOf(data) : null;
+  if (!useSupabase) {
+    globalForStore.__gwpmMemory = next;
+  }
 
   const run = async () => {
+    if (useSupabase) {
+      const nextRev = await commitSupabase(next, supabaseRevision);
+      tagRevision(next, nextRev);
+      tagRevision(data, nextRev);
+      return;
+    }
     if (blobStoreEnabled()) {
       await writeToBlob(next);
     } else {
@@ -161,10 +184,26 @@ export async function writeData(data: AppData): Promise<void> {
 export async function updateData(
   mutator: (data: AppData) => void | Promise<void>,
 ): Promise<AppData> {
-  const data = await readData();
-  await mutator(data);
-  await writeData(data);
-  return data;
+  if (!supabaseConfigured()) {
+    const data = await readData();
+    await mutator(data);
+    await writeData(data);
+    return data;
+  }
+
+  let last: unknown;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const data = await readData();
+    await mutator(data);
+    try {
+      await writeData(data);
+      return data;
+    } catch (error) {
+      last = error;
+      if (!isRevisionConflict(error) || attempt === 4) throw error;
+    }
+  }
+  throw last instanceof Error ? last : new Error("資料寫入衝突，請再試一次");
 }
 
 export async function resetData(): Promise<AppData> {
@@ -173,8 +212,22 @@ export async function resetData(): Promise<AppData> {
   return data;
 }
 
+export type PersistenceMode = "supabase" | "blob" | "local";
+
+export function persistenceMode(): PersistenceMode {
+  if (supabaseConfigured()) return "supabase";
+  if (blobStoreEnabled()) return "blob";
+  return "local";
+}
+
+export function persistenceLabel(mode: PersistenceMode = persistenceMode()): string {
+  if (mode === "supabase") return "Supabase（多租戶）";
+  if (mode === "blob") return "Vercel Blob（可寫）";
+  return "本地 JSON（未連接 Supabase）";
+}
+
 export function isUsingBlobStore(): boolean {
-  return blobStoreEnabled();
+  return persistenceMode() === "blob";
 }
 
 export async function saveUpload(
@@ -182,6 +235,10 @@ export async function saveUpload(
   bytes: Buffer,
   contentType: string,
 ): Promise<string> {
+  if (supabaseConfigured()) {
+    return saveSupabaseUpload(filename, bytes, contentType);
+  }
+
   if (blobStoreEnabled()) {
     const blob = await put(`uploads/${filename}`, bytes, {
       access: "public",

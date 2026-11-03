@@ -33,11 +33,23 @@ npm run dev
 
 ## 資料層
 
+有 `NEXT_PUBLIC_SUPABASE_URL` 與 `SUPABASE_SERVICE_ROLE_KEY` 時，讀寫走 Supabase（公司隔離仍由登入者的 org 過濾；RLS 拒絕 anon，避免讀到密碼雜湊）。否則用本地 JSON 或 Vercel Blob。
+
+**正式資料庫尚未連接**：repo 與這個開發環境都沒有真實 URL／key。Alvis 把數值設進 Vercel（Production 與 Preview）和本地 `.env.local` 並重新部署之前，預覽站不會寫入 Supabase。不要把 key 提交進 git 或 PR。
+
+| 變數 | 必填 | 設在哪 |
+|------|------|--------|
+| `NEXT_PUBLIC_SUPABASE_URL` | 是 | Vercel Environment Variables、`.env.local` |
+| `SUPABASE_SERVICE_ROLE_KEY` | 是（只放伺服器） | 同上。不可用 `NEXT_PUBLIC_` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 否 | 伺服器資料層不讀。RLS 拒絕 anon |
+| `DATABASE_URL` | 否 | 只給 psql。應用程式不讀 |
+
+接上步驟：Supabase 建立 project → SQL Editor 執行 `supabase/schema.sql` → 設定上面兩個必填變數 → 重新部署。空資料庫第一次讀取會寫入現有演示帳號。`npm run seed` 在已連接時會把演示資料整份重置進 Supabase。
+
 | 環境 | 行為 |
 |------|------|
-| 本地 | `data/gwpm.json` |
-| Vercel | 建議 `BLOB_READ_WRITE_TOKEN` |
-| Supabase（建議升級） | 開 project → 跑 `supabase/schema.sql` → 設 URL／keys；接線完成後作正式多公司持久化 |
+| 未設定 Supabase | 本地 `data/gwpm.json`；Vercel 上若有 `BLOB_READ_WRITE_TOKEN` 則用 Blob，否則為執行個體暫存 |
+| 已設定 Supabase | 多公司資料與現場相片（bucket `gwpm-uploads`）走 Supabase |
 
 ## 指令
 

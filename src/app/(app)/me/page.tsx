@@ -4,14 +4,14 @@ import { updateProfileAction } from "@/actions/profile";
 import { requireSession, isOwner } from "@/lib/auth";
 import { PRODUCT_FULL, PRODUCT_NAME } from "@/lib/labels";
 import { getOrganization } from "@/lib/permissions";
-import { isUsingBlobStore, readData } from "@/lib/store";
+import { persistenceLabel, readData } from "@/lib/store";
 
 export default async function MePage() {
   const user = await requireSession();
   const owner = isOwner(user);
   const data = await readData();
   const org = getOrganization(data, user.orgId);
-  const storeMode = isUsingBlobStore() ? "Vercel Blob（可寫）" : "本地 JSON（開發）";
+  const storeMode = persistenceLabel();
 
   return (
     <div className="page">
