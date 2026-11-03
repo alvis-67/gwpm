@@ -10,24 +10,34 @@ import { updateData } from "@/lib/store";
 
 export async function createPartnerAction(formData: FormData) {
   const session = await requireSession();
-  if (!canManageProjects(session)) throw new Error("無權限");
   const admin = isAdmin(session);
+  const manager = canManageProjects(session);
 
   const companyName = String(formData.get("companyName") || "").trim();
   const name = String(formData.get("name") || "").trim();
   const phoneE164 = String(formData.get("phoneE164") || "").trim();
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
+  const projectId = String(formData.get("projectId") || "");
+  const tradeId = String(formData.get("tradeId") || "");
 
   if (!companyName) throw new Error("工程公司名稱（必填）");
   if (!name) throw new Error("負責人姓名（必填）");
   if (!email) throw new Error("登入電郵（必填）");
   if (password.length < 6) throw new Error("密碼至少 6 位");
+  if (!manager && !projectId) throw new Error("無權限");
 
   const passwordHash = await hash(password, 10);
-  const projectId = String(formData.get("projectId") || "");
+  let returnToTrade = "";
 
   await updateData((data) => {
+    if (!manager) {
+      const trade = data.trades.find(
+        (item) => item.id === tradeId && item.projectId === projectId,
+      );
+      if (!trade || !canLeadProject(data, session, projectId)) throw new Error("無權限");
+      returnToTrade = `/projects/${projectId}/trades/${tradeId}`;
+    }
     const orgId = admin ? String(formData.get("orgId") || "") : session.orgId;
     if (!data.organizations.some((org) => org.id === orgId)) {
       throw new Error("請選擇工程公司");
@@ -58,6 +68,10 @@ export async function createPartnerAction(formData: FormData) {
   });
 
   revalidatePath("/partners");
+  if (returnToTrade) {
+    revalidatePath(returnToTrade);
+    redirect(returnToTrade);
+  }
   redirect("/partners");
 }
 

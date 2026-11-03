@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { createPartnerAction } from "@/actions/partners";
 import {
   deleteTradeAction,
   renameTradeAction,
@@ -111,7 +112,7 @@ export default async function TradeDetailPage({
       {leader && (
         <>
           <h2 className="section-title">指派負責人</h2>
-          {canManageProjects(user) && (
+          {canManageProjects(user) ? (
             <p className="secondary text-sm mb-2">
               找不到公司？先到{" "}
               <Link href={`/partners?projectId=${id}`} className="btn btn-tertiary" style={{ display: "inline", padding: 0, minHeight: 0 }}>
@@ -119,6 +120,47 @@ export default async function TradeDetailPage({
               </Link>{" "}
               新增。
             </p>
+          ) : (
+            <>
+              <h3 className="section-title">新增工程負責人</h3>
+              <form action={createPartnerAction} className="mb-4">
+                <input type="hidden" name="projectId" value={id} />
+                <input type="hidden" name="tradeId" value={trade.id} />
+                <div className="field">
+                  <label htmlFor="leadCompany">工程公司名稱（必填）</label>
+                  <input id="leadCompany" name="companyName" required />
+                </div>
+                <div className="field">
+                  <label htmlFor="leadName">負責人姓名（必填）</label>
+                  <input id="leadName" name="name" required />
+                </div>
+                <div className="field">
+                  <label htmlFor="leadPhone">電話（E.164）</label>
+                  <input
+                    id="leadPhone"
+                    name="phoneE164"
+                    className="font-mono"
+                    placeholder="+85291234567"
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="leadEmail">登入電郵（必填）</label>
+                  <input id="leadEmail" name="email" type="email" required autoComplete="off" />
+                </div>
+                <div className="field">
+                  <label htmlFor="leadPassword">密碼（至少 6 位）</label>
+                  <input
+                    id="leadPassword"
+                    name="password"
+                    type="password"
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
+                  />
+                </div>
+                <SubmitButton label="儲存" className="btn btn-primary" />
+              </form>
+            </>
           )}
           <AssignLeadForm
             tradeId={trade.id}

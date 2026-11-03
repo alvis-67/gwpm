@@ -1,7 +1,7 @@
 /**
- * Shown on the public home page and the login page, before anyone signs in.
+ * Shown on the public home page, the login page, and the signed-in wordmark.
  * Bump on each shipped update: 1.0, 1.1, 1.2, …
  */
-export const APP_VERSION = "2.5";
+export const APP_VERSION = "2.51";
 
 export const APP_VERSION_LABEL = `Version ${APP_VERSION}`;

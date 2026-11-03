@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PRODUCT_NAME, navItems } from "@/lib/labels";
+import { navItems } from "@/lib/labels";
+import { APP_VERSION_LABEL } from "@/lib/version";
 
 function Icon({ name, active }: { name: string; active: boolean }) {
   const stroke = active ? "var(--color-brand)" : "var(--color-ink-muted)";
@@ -62,10 +63,15 @@ export function AppNav({ unread = 0 }: { unread?: number }) {
 
   return (
     <>
+      <header className="md:hidden sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+        <div className="brand-mark text-lg">GPMS</div>
+        <p className="muted text-xs mt-1">{APP_VERSION_LABEL}</p>
+      </header>
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-[var(--nav-side-width)] flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] z-30">
         <div className="px-5 py-5">
-          <div className="brand-mark text-lg">{PRODUCT_NAME}</div>
-          <p className="muted text-xs mt-1">現場調度台</p>
+          <div className="brand-mark text-lg">GPMS</div>
+          <p className="muted text-xs mt-1">{APP_VERSION_LABEL}</p>
+          <p className="muted text-xs">現場調度台</p>
         </div>
         <nav className="flex flex-col gap-1 px-3">
           {navItems.map((item) => {

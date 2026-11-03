@@ -61,7 +61,7 @@ export default async function ProjectOverviewPage({
     <div className="page">
       <header className="page-header" style={{ alignItems: "flex-start" }}>
         <div>
-          <p className="brand-mark text-sm mb-2">Gwpm</p>
+          <p className="brand-mark text-sm mb-2">GPMS</p>
           <h1 className="page-title">{project.name}</h1>
           <div className="list-row-meta mt-2">
             <ProjectStatusChip status={project.status} />
