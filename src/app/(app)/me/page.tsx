@@ -44,6 +44,15 @@ export default async function MePage() {
         <>
           <h2 className="section-title">管理</h2>
           <div className="list mb-4">
+            <Link href="/accounts" className="list-row">
+              <div className="list-row-main">
+                <h2 className="list-row-title">帳號</h2>
+                <p className="secondary text-sm mb-0">
+                  建立本公司登入（電郵、姓名、角色、密碼）
+                </p>
+              </div>
+              <span className="muted">›</span>
+            </Link>
             <Link href="/partners" className="list-row">
               <div className="list-row-main">
                 <h2 className="list-row-title">工程公司／負責人</h2>

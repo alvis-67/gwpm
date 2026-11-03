@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 import { loginAction } from "@/actions/auth";
 import { PRODUCT_NAME, PRODUCT_TAGLINE } from "@/lib/labels";
@@ -67,13 +66,6 @@ export default function LoginPage() {
               {pending ? "登入中…" : "登入"}
             </button>
           </form>
-
-          <p className="text-sm secondary mt-6">
-            新公司老闆？{" "}
-            <Link href="/register" style={{ color: "var(--color-brand)", fontWeight: 500 }}>
-              註冊獨立公司帳號
-            </Link>
-          </p>
 
           <div className="mt-8 text-sm secondary">
             <p className="font-medium text-[var(--color-ink)] mb-2">演示帳號</p>
