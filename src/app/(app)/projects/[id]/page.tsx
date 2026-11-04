@@ -121,33 +121,35 @@ export default async function ProjectOverviewPage({
       )}
 
       {leader && (
-        <section>
-          <h2 className="section-title">客人付款</h2>
-          <form action={saveCustomerPaymentAction} className="mb-3">
+        <section className="money-strip" aria-label="客人付款">
+          <form action={saveCustomerPaymentAction} className="money-strip-form">
             <input type="hidden" name="projectId" value={id} />
-            <div className="field">
-              <label htmlFor="customerPayment">客人付款</label>
-              <input
-                id="customerPayment"
-                name="customerPayment"
-                inputMode="decimal"
-                className="font-mono"
-                defaultValue={docs.customerPayment ?? ""}
-              />
-            </div>
+            <label htmlFor="customerPayment">客人付款</label>
+            <input
+              id="customerPayment"
+              name="customerPayment"
+              inputMode="decimal"
+              className="money-strip-input font-mono"
+              defaultValue={docs.customerPayment ?? ""}
+            />
             <SubmitButton label="儲存" className="btn btn-secondary" />
           </form>
-          <div className="list" style={{ padding: "var(--space-3) var(--page-padding-x)" }}>
-            <p className="mb-1">
-              客人付款：<span className="font-mono">{formatAmount(docs.customerPayment)}</span>
-            </p>
-            <p className="mb-1">
-              金額合計：<span className="font-mono">{formatAmount(tradeTotal)}</span>
-            </p>
-            <p className="mb-0">
-              餘額：<span className="font-mono">{formatAmount(remainder)}</span>
-            </p>
-          </div>
+          <dl className="money-strip-figures">
+            <div>
+              <dt>客人付款</dt>
+              <dd className="font-mono">{formatAmount(docs.customerPayment)}</dd>
+            </div>
+            <div>
+              <dt>金額合計</dt>
+              <dd className="font-mono">{formatAmount(tradeTotal)}</dd>
+            </div>
+            <div>
+              <dt>餘額</dt>
+              <dd className={`font-mono${remainder != null && remainder < 0 ? " is-negative" : ""}`}>
+                {formatAmount(remainder)}
+              </dd>
+            </div>
+          </dl>
         </section>
       )}
 

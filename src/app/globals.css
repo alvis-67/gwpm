@@ -582,3 +582,95 @@ a.list-row:hover {
 .secondary {
   color: var(--color-ink-secondary);
 }
+
+.money-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin: 0 0 1.25rem;
+  padding: 12px 14px;
+  background: #fffdf9;
+  border: 1px solid #e3ddd3;
+  border-top: 2px solid #b08958;
+  border-radius: 2px;
+}
+
+.money-strip-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.money-strip-form label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #5c6762;
+  white-space: nowrap;
+}
+
+.money-strip-input {
+  width: 7.5rem;
+  height: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 10px;
+  border: 1px solid #e3ddd3;
+  border-radius: 2px;
+  background: #fff;
+  color: #143f3a;
+}
+
+.money-strip-input:focus {
+  outline: 2px solid #143f3a;
+  outline-offset: 1px;
+  border-color: #143f3a;
+}
+
+.money-strip-form .btn {
+  min-height: 2.25rem;
+  height: 2.25rem;
+  padding: 0 14px;
+  background: #143f3a;
+  border-color: #143f3a;
+  border-radius: 2px;
+  color: #f7f3ec;
+  letter-spacing: 0.12em;
+}
+
+.money-strip-form .btn:hover:not(:disabled) {
+  background: #0e2e2a;
+}
+
+.money-strip-figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0;
+}
+
+.money-strip-figures div {
+  min-width: 4.75rem;
+}
+
+.money-strip-figures dt {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #5c6762;
+}
+
+.money-strip-figures dd {
+  margin: 2px 0 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #143f3a;
+}
+
+.money-strip-figures dd.is-negative {
+  color: var(--color-danger);
+}
