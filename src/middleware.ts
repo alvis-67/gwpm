@@ -10,7 +10,6 @@ export function middleware(req: NextRequest) {
   if (
     PUBLIC.some((p) => pathname === p || pathname.startsWith(p + "/")) ||
     pathname.startsWith("/icons") ||
-    pathname.startsWith("/uploads") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico"
   ) {

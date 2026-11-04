@@ -2,7 +2,8 @@
 
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import { createSession, requireSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { createSession, destroySession, requireSession } from "@/lib/auth";
 import { updateData } from "@/lib/store";
 
 export async function updateProfileAction(formData: FormData) {
@@ -37,4 +38,6 @@ export async function changePasswordAction(formData: FormData) {
   });
 
   revalidatePath("/me");
+  await destroySession();
+  redirect("/login");
 }

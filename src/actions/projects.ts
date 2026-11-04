@@ -3,14 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { isAdmin, isOwner, requireSession } from "@/lib/auth";
+import { isAdmin, requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
 import {
   assignableUsers,
-  canAccessProject,
+  canLeadProject,
   managedProject,
   rememberProjectAssignee,
 } from "@/lib/permissions";
+import { deleteStoredUploads } from "@/lib/uploads";
 import { updateData } from "@/lib/store";
 import { joinProjectNotes, splitProjectNotes } from "@/lib/project-docs";
 import { DEFAULT_TRADE_TEMPLATES, type ProjectStatus } from "@/lib/types";
@@ -153,6 +154,7 @@ export async function updateProjectAction(formData: FormData) {
 export async function deleteProjectAction(formData: FormData) {
   const user = await requireSession();
   const projectId = String(formData.get("projectId") || "");
+  const removedUploads: string[] = [];
   await updateData((data) => {
     const project = managedProject(data, user, projectId);
     if (!project) throw new Error("無權限");
@@ -162,6 +164,9 @@ export async function deleteProjectAction(formData: FormData) {
     const logIds = new Set(
       data.workLogs.filter((log) => tradeIds.has(log.projectTradeId)).map((log) => log.id),
     );
+    for (const photo of data.photos) {
+      if (logIds.has(photo.workLogId)) removedUploads.push(photo.url);
+    }
     data.projects = data.projects.filter((item) => item.id !== projectId);
     data.trades = data.trades.filter((trade) => trade.projectId !== projectId);
     data.dependencies = data.dependencies.filter((item) => item.projectId !== projectId);
@@ -178,6 +183,7 @@ export async function deleteProjectAction(formData: FormData) {
   });
   revalidatePath("/projects");
   revalidatePath("/customers", "layout");
+  await deleteStoredUploads(removedUploads);
   redirect("/projects");
 }
 
@@ -343,15 +349,12 @@ export async function deleteDependencyAction(formData: FormData) {
 
 export async function setProjectLeadAction(formData: FormData) {
   const user = await requireSession();
-  if (!isAdmin(user) && !isOwner(user)) throw new Error("無權限");
   const projectId = String(formData.get("projectId") || "");
   const leadUserId = String(formData.get("leadUserId") || "").trim();
 
   await updateData((data) => {
-    const project = data.projects.find(
-      (item) => item.id === projectId && (isAdmin(user) || item.orgId === user.orgId),
-    );
-    if (!project) throw new Error("找不到工程案");
+    const project = data.projects.find((item) => item.id === projectId);
+    if (!project || !canLeadProject(data, user, project.id)) throw new Error("無權限");
     if (leadUserId && !assignableUsers(data).some((candidate) => candidate.id === leadUserId)) {
       throw new Error("請選擇 Leader");
     }
@@ -377,7 +380,7 @@ export async function addProjectCommentAction(formData: FormData) {
 
   await updateData((data) => {
     const project = data.projects.find((item) => item.id === projectId);
-    if (!project || !canAccessProject(data, user, project.id)) throw new Error("無權限");
+    if (!project || !canLeadProject(data, user, project.id)) throw new Error("無權限");
     const kept = splitProjectNotes(project.notes);
     project.notes = joinProjectNotes(kept.text, kept.quotationNumber, kept.invoiceNumber, {
       leadUserId: kept.leadUserId,

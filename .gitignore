@@ -36,6 +36,7 @@ yarn-error.log*
 
 # local writable data
 /data/gwpm.json
+/data/uploads
 /public/uploads/*
 !/public/uploads/.gitkeep
 

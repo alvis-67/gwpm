@@ -71,8 +71,8 @@ export default async function ProjectOverviewPage({
                 {project.clientDisplayName}
               </Link>
             ) : null}
-            {docs.quotationNumber ? <span>報價 {docs.quotationNumber}</span> : null}
-            {docs.invoiceNumber ? <span>發票 {docs.invoiceNumber}</span> : null}
+            {leader && docs.quotationNumber ? <span>報價 {docs.quotationNumber}</span> : null}
+            {leader && docs.invoiceNumber ? <span>發票 {docs.invoiceNumber}</span> : null}
           </div>
         </div>
         {leader && (
@@ -147,33 +147,37 @@ export default async function ProjectOverviewPage({
         </>
       )}
 
-      <h2 className="section-title">留言</h2>
-      {docs.comments.length === 0 ? (
-        <p className="empty">尚無留言</p>
-      ) : (
-        <div className="mb-4">
-          {docs.comments.map((comment) => {
-            const author = data.users.find((item) => item.id === comment.authorUserId);
-            return (
-              <div key={comment.id} className="timeline-item">
-                <div className="flex justify-between gap-2 text-sm secondary">
-                  <strong style={{ color: "var(--color-ink)" }}>{author?.name || "負責人"}</strong>
-                  <span className="font-mono">{formatDateTimeZh(comment.createdAt)}</span>
-                </div>
-                <p className="mt-2 mb-0 whitespace-pre-wrap">{comment.body}</p>
-              </div>
-            );
-          })}
-        </div>
+      {leader && (
+        <>
+          <h2 className="section-title">留言</h2>
+          {docs.comments.length === 0 ? (
+            <p className="empty">尚無留言</p>
+          ) : (
+            <div className="mb-4">
+              {docs.comments.map((comment) => {
+                const author = data.users.find((item) => item.id === comment.authorUserId);
+                return (
+                  <div key={comment.id} className="timeline-item">
+                    <div className="flex justify-between gap-2 text-sm secondary">
+                      <strong style={{ color: "var(--color-ink)" }}>{author?.name || "負責人"}</strong>
+                      <span className="font-mono">{formatDateTimeZh(comment.createdAt)}</span>
+                    </div>
+                    <p className="mt-2 mb-0 whitespace-pre-wrap">{comment.body}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <form action={addProjectCommentAction} className="mb-6">
+            <input type="hidden" name="projectId" value={id} />
+            <div className="field">
+              <label htmlFor="commentBody">留言（必填）</label>
+              <textarea id="commentBody" name="body" required placeholder="輸入留言…" />
+            </div>
+            <SubmitButton label="送出" className="btn btn-primary" />
+          </form>
+        </>
       )}
-      <form action={addProjectCommentAction} className="mb-6">
-        <input type="hidden" name="projectId" value={id} />
-        <div className="field">
-          <label htmlFor="commentBody">留言（必填）</label>
-          <textarea id="commentBody" name="body" required placeholder="輸入留言…" />
-        </div>
-        <SubmitButton label="送出" className="btn btn-primary" />
-      </form>
 
       <div className="link-row">
         <Link href={`/projects/${id}/schedule`}>排程</Link>

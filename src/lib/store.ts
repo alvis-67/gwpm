@@ -285,7 +285,7 @@ export async function saveUpload(
 
   if (blobStoreEnabled()) {
     const blob = await put(`uploads/${filename}`, bytes, {
-      access: "public",
+      access: "private",
       contentType,
       addRandomSuffix: true,
     });
@@ -294,19 +294,17 @@ export async function saveUpload(
 
   const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
   const finalName = `${Date.now()}_${safe}`;
-  const dirs = onVercel()
-    ? [path.join("/tmp", "uploads")]
-    : [path.join(process.cwd(), "public", "uploads"), path.join("/tmp", "uploads")];
+  const dirs = [path.join(process.cwd(), "data", "uploads"), path.join("/tmp", "uploads")];
 
   for (const uploadsDir of dirs) {
     try {
       await fs.mkdir(uploadsDir, { recursive: true });
       await fs.writeFile(path.join(uploadsDir, finalName), bytes);
       if (uploadsDir.startsWith("/tmp")) {
-        // Serve via data URL fallback is not ideal; require Blob for durable photos on Vercel
+        // No durable disk on this host. The bytes stay in the record and are served only after login.
         return `data:${contentType};base64,${bytes.toString("base64")}`;
       }
-      return `/uploads/${finalName}`;
+      return `file:${finalName}`;
     } catch {
       // try next
     }

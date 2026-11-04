@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { compare } from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
@@ -8,8 +9,13 @@ import { readData } from "./store";
 const COOKIE = "gwpm_session";
 
 function secretKey() {
-  const secret = process.env.AUTH_SECRET || "gwpm-dev-secret-change-me";
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) throw new Error("AUTH_SECRET 未設定");
   return new TextEncoder().encode(secret);
+}
+
+function passwordStamp(passwordHash: string): string {
+  return createHash("sha256").update(passwordHash).digest("base64url");
 }
 
 export interface SessionUser {
@@ -31,6 +37,7 @@ export async function createSession(user: User): Promise<void> {
     companyName: user.companyName || "",
     phoneE164: user.phoneE164,
     roleDefault: user.roleDefault,
+    pwd: passwordStamp(user.passwordHash),
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -52,32 +59,53 @@ export async function destroySession(): Promise<void> {
   jar.delete(COOKIE);
 }
 
+function sessionFromUser(user: User): SessionUser {
+  return {
+    id: user.id,
+    orgId: user.orgId,
+    email: user.email,
+    name: user.name,
+    companyName: user.companyName || "",
+    phoneE164: user.phoneE164,
+    roleDefault: user.roleDefault,
+  };
+}
+
+/**
+ * The cookie is accepted only when the account still exists, the role is unchanged,
+ * and the password stamp still matches. A deleted Leader cannot keep the old login.
+ */
 export async function getSession(): Promise<SessionUser | null> {
   const jar = await cookies();
   const token = jar.get(COOKIE)?.value;
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secretKey());
-    return {
-      id: String(payload.id),
-      orgId: String(payload.orgId || ""),
-      email: String(payload.email),
-      name: String(payload.name),
-      companyName: String(payload.companyName || ""),
-      phoneE164: String(payload.phoneE164 || ""),
-      roleDefault: payload.roleDefault as Role,
-    };
-  } catch {
+    const data = await readData();
+    const user = data.users.find((item) => item.id === String(payload.id));
+    const stamp = typeof payload.pwd === "string" ? payload.pwd : "";
+    if (
+      !user ||
+      user.roleDefault !== payload.roleDefault ||
+      passwordStamp(user.passwordHash) !== stamp
+    ) {
+      return null;
+    }
+    return sessionFromUser(user);
+  } catch (error) {
+    if (error instanceof Error && error.message === "AUTH_SECRET 未設定") throw error;
     return null;
   }
 }
 
 export async function requireSession(): Promise<SessionUser> {
   const session = await getSession();
-  if (!session) redirect("/login");
-  if (!session.orgId) {
-    // stale cookie from pre-multi-tenant — force re-login
-    await destroySession();
+  if (!session || !session.orgId) {
+    try {
+      await destroySession();
+    } catch {
+      // A Server Component cannot always clear the cookie. Login replaces it.
+    }
     redirect("/login");
   }
   return session;

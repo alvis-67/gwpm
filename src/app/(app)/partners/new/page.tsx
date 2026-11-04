@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createPartnerAction } from "@/actions/partners";
+import { CreatePartnerForm } from "@/components/CreatePartnerForm";
 import { SubmitButton } from "@/components/SubmitButton";
 import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 
@@ -20,7 +20,7 @@ export default async function NewPartnerPage({
         <Link href="/partners">工程公司／負責人</Link>
       </p>
       <h1 className="page-title mb-4">新增工程公司／負責人</h1>
-      <form action={createPartnerAction}>
+      <CreatePartnerForm>
         {projectId ? <input type="hidden" name="projectId" value={projectId} /> : null}
         <div className="field">
           <label htmlFor="companyName">工程公司名稱（必填）</label>
@@ -55,7 +55,7 @@ export default async function NewPartnerPage({
           />
         </div>
         <SubmitButton label="儲存" className="btn btn-primary btn-block md:max-w-xs" />
-      </form>
+      </CreatePartnerForm>
     </div>
   );
 }

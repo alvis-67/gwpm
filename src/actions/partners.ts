@@ -8,6 +8,8 @@ import { createId } from "@/lib/ids";
 import { canLeadProject, rememberProjectAssignee } from "@/lib/permissions";
 import { updateData } from "@/lib/store";
 
+const DUPLICATE_EMAIL = "GWPM_DUPLICATE_EMAIL";
+
 export async function createPartnerAction(formData: FormData) {
   const session = await requireSession();
   const admin = isAdmin(session);
@@ -30,6 +32,7 @@ export async function createPartnerAction(formData: FormData) {
   const passwordHash = await hash(password, 10);
   let returnToTrade = "";
 
+  try {
   await updateData((data) => {
     if (!manager) {
       const trade = data.trades.find(
@@ -43,7 +46,9 @@ export async function createPartnerAction(formData: FormData) {
       throw new Error("請選擇工程公司");
     }
     if (data.users.some((u) => u.email.toLowerCase() === email)) {
-      throw new Error("此電郵已存在");
+      const duplicate = new Error("此電郵已存在");
+      duplicate.name = DUPLICATE_EMAIL;
+      throw duplicate;
     }
     const userId = createId("user");
     data.users.push({
@@ -66,6 +71,12 @@ export async function createPartnerAction(formData: FormData) {
       rememberProjectAssignee(data, project, userId);
     }
   });
+  } catch (error) {
+    if (error instanceof Error && error.name === DUPLICATE_EMAIL) {
+      return { error: "此電郵已存在" };
+    }
+    throw error;
+  }
 
   revalidatePath("/partners");
   if (returnToTrade) {

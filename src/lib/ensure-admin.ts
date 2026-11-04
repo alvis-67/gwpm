@@ -1,8 +1,8 @@
 import {
   ADMIN_EMAIL,
   ADMIN_ORG_ID,
-  ADMIN_PASSWORD_HASH,
   ADMIN_USER_ID,
+  adminPasswordHashFromEnv,
 } from "./admin-account";
 import type { AppData } from "./types";
 
@@ -32,7 +32,7 @@ export function addPlatformAdmin(data: AppData): void {
     companyName: "Gwpm",
     phoneE164: "",
     roleDefault: "admin",
-    passwordHash: ADMIN_PASSWORD_HASH,
+    passwordHash: adminPasswordHashFromEnv(),
     createdAt: now,
   });
 }

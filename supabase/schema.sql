@@ -567,31 +567,26 @@ begin
   end if;
 end $$;
 
--- Photo bucket. Skipped when this file is applied outside Supabase.
+-- Photo bucket is private. The app serves bytes only after login.
+-- Skipped when this file is applied outside Supabase.
 do $$
 begin
   if to_regclass('storage.buckets') is not null then
     execute $sql$
       insert into storage.buckets (id, name, "public")
-      values ('gwpm-uploads', 'gwpm-uploads', true)
-      on conflict (id) do update set "public" = excluded."public"
+      values ('gwpm-uploads', 'gwpm-uploads', false)
+      on conflict (id) do update set "public" = false
     $sql$;
   end if;
 
   if to_regclass('storage.objects') is not null
-     and not exists (
+     and exists (
        select 1 from pg_policies
        where schemaname = 'storage'
          and tablename = 'objects'
          and policyname = 'gwpm_uploads_public_read'
      ) then
-    execute $sql$
-      create policy gwpm_uploads_public_read
-      on storage.objects
-      for select
-      to public
-      using (bucket_id = 'gwpm-uploads')
-    $sql$;
+    execute 'drop policy gwpm_uploads_public_read on storage.objects';
   end if;
 end $$;
 

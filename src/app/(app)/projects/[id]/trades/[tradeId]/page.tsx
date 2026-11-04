@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createPartnerAction } from "@/actions/partners";
 import {
   deleteTradeAction,
   renameTradeAction,
   updateTradeScheduleAction,
 } from "@/actions/projects";
 import { AssignLeadForm } from "@/components/AssigneeSelect";
+import { CreatePartnerForm } from "@/components/CreatePartnerForm";
 import { ConfirmTwiceButton } from "@/components/ConfirmTwiceButton";
 import { SubmitButton } from "@/components/SubmitButton";
 import { DependencyBanner } from "@/components/DependencyBanner";
@@ -123,7 +123,7 @@ export default async function TradeDetailPage({
           ) : (
             <>
               <h3 className="section-title">新增工程負責人</h3>
-              <form action={createPartnerAction} className="mb-4">
+              <CreatePartnerForm className="mb-4">
                 <input type="hidden" name="projectId" value={id} />
                 <input type="hidden" name="tradeId" value={trade.id} />
                 <div className="field">
@@ -159,15 +159,15 @@ export default async function TradeDetailPage({
                   />
                 </div>
                 <SubmitButton label="儲存" className="btn btn-primary" />
-              </form>
+              </CreatePartnerForm>
             </>
           )}
           <AssignLeadForm
             tradeId={trade.id}
             assigneeUserId={trade.assigneeUserId}
-            leads={leads.map((user) => ({
-              id: user.id,
-              label: `${formatLeadLabel(user)}（${user.phoneE164 || "無電話"}）`,
+            leads={leads.map((person) => ({
+              id: person.id,
+              label: formatLeadLabel(person),
             }))}
           />
 

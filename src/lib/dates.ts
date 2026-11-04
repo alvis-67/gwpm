@@ -10,6 +10,16 @@ export function todayISO(base = new Date()): string {
   return format(startOfDay(base), "yyyy-MM-dd");
 }
 
+/** Calendar date in Hong Kong, including the hours before UTC midnight. */
+export function hongKongTodayISO(base = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Hong_Kong",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(base);
+}
+
 export function tomorrowISO(base = new Date()): string {
   return format(addDays(startOfDay(base), 1), "yyyy-MM-dd");
 }

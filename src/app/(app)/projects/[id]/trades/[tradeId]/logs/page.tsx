@@ -74,7 +74,7 @@ export default async function TradeLogsPage({
                   <div className="photo-grid">
                     {photos.map((p) => (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img key={p.id} src={p.url} alt="現場相片" loading="lazy" />
+                      <img key={p.id} src={`/media/photos/${p.id}`} alt="現場相片" loading="lazy" />
                     ))}
                   </div>
                 )}

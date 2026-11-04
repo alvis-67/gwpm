@@ -111,6 +111,45 @@ export async function saveSupabaseUpload(
       `無法儲存相片（${error.message}）。請確認已執行 supabase/schema.sql，並已建立 ${SUPABASE_UPLOAD_BUCKET} bucket。`,
     );
   }
-  const { data } = supabase.storage.from(SUPABASE_UPLOAD_BUCKET).getPublicUrl(objectPath);
-  return data.publicUrl;
+  return `sb:${objectPath}`;
+}
+
+/** Stored photo locator, or a legacy public object URL. Rejects path traversal. */
+export function supabaseObjectPath(stored: string): string | null {
+  let raw = "";
+  if (stored.startsWith("sb:")) raw = stored.slice(3);
+  else {
+    for (const kind of ["public", "authenticated"]) {
+      const marker = `/object/${kind}/${SUPABASE_UPLOAD_BUCKET}/`;
+      const index = stored.indexOf(marker);
+      if (index >= 0) {
+        raw = stored.slice(index + marker.length);
+        break;
+      }
+    }
+  }
+  const objectPath = decodeURIComponent(raw.split("?")[0] || "");
+  if (!objectPath || objectPath.includes("..") || objectPath.startsWith("/") || objectPath.includes("\\")) {
+    return null;
+  }
+  return objectPath;
+}
+
+export async function downloadSupabaseObject(
+  objectPath: string,
+): Promise<{ bytes: Buffer; contentType: string } | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return null;
+  const { data, error } = await supabase.storage.from(SUPABASE_UPLOAD_BUCKET).download(objectPath);
+  if (error || !data) return null;
+  return {
+    bytes: Buffer.from(await data.arrayBuffer()),
+    contentType: data.type || "application/octet-stream",
+  };
+}
+
+export async function deleteSupabaseObject(objectPath: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return;
+  await supabase.storage.from(SUPABASE_UPLOAD_BUCKET).remove([objectPath]);
 }

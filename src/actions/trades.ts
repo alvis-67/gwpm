@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
+import { hongKongTodayISO } from "@/lib/dates";
 import { evaluateDependency } from "@/lib/dependencies";
 import { pushNotification } from "@/lib/notifications";
 import { canEditTrade, projectLeaderId } from "@/lib/permissions";
@@ -24,11 +25,12 @@ export async function updateTradeStatusAction(
 
     const prev = trade.status;
     trade.status = status;
+    const today = hongKongTodayISO();
     if (status === "in_progress" && !trade.actualStart) {
-      trade.actualStart = new Date().toISOString().slice(0, 10);
+      trade.actualStart = today;
     }
     if (status === "completed") {
-      trade.actualEnd = new Date().toISOString().slice(0, 10);
+      trade.actualEnd = today;
     }
 
     const project = data.projects.find((p) => p.id === trade.projectId);

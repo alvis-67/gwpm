@@ -134,7 +134,7 @@ export default async function ReportPage({
                       <div className="photo-grid">
                         {photos.map((p) => (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img key={p.id} src={p.url} alt="" />
+                          <img key={p.id} src={`/media/photos/${p.id}`} alt="" />
                         ))}
                       </div>
                     )}
