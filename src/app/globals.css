@@ -674,3 +674,45 @@ a.list-row:hover {
 .money-strip-figures dd.is-negative {
   color: var(--color-danger);
 }
+
+.trade-amount-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 var(--page-padding-x) var(--space-3);
+}
+
+.trade-amount-form label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #5c6762;
+  white-space: nowrap;
+}
+
+.trade-amount-input {
+  width: 7.5rem;
+  flex: 0 0 7.5rem;
+  max-width: 7.5rem;
+  height: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 10px;
+  border: 1px solid #e3ddd3;
+  border-radius: 2px;
+  background: #fff;
+  color: #143f3a;
+}
+
+.trade-amount-input:focus {
+  outline: 2px solid #143f3a;
+  outline-offset: 1px;
+  border-color: #143f3a;
+}
+
+.trade-amount-form .btn {
+  flex: 0 0 auto;
+  min-height: 2.25rem;
+  height: 2.25rem;
+  padding: 0 14px;
+}

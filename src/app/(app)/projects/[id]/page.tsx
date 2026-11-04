@@ -178,22 +178,16 @@ export default async function ProjectOverviewPage({
                 canRemove={leader}
               />
               {leader && (
-                <form
-                  action={saveTradeAmountAction}
-                  className="mb-3"
-                  style={{ padding: "0 var(--page-padding-x) var(--space-3)" }}
-                >
+                <form action={saveTradeAmountAction} className="trade-amount-form">
                   <input type="hidden" name="tradeId" value={trade.id} />
-                  <div className="field">
-                    <label htmlFor={`amount-${trade.id}`}>金額</label>
-                    <input
-                      id={`amount-${trade.id}`}
-                      name="amount"
-                      inputMode="decimal"
-                      className="font-mono"
-                      defaultValue={amount ?? ""}
-                    />
-                  </div>
+                  <label htmlFor={`amount-${trade.id}`}>金額</label>
+                  <input
+                    id={`amount-${trade.id}`}
+                    name="amount"
+                    inputMode="decimal"
+                    className="trade-amount-input font-mono"
+                    defaultValue={amount ?? ""}
+                  />
                   <SubmitButton label="儲存" className="btn btn-secondary" />
                 </form>
               )}
