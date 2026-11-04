@@ -17,7 +17,6 @@ import { formatDateZh } from "@/lib/dates";
 import { evaluateDependency } from "@/lib/dependencies";
 import { formatLeadLabel } from "@/lib/format";
 import {
-  assignableUsers,
   canAccessProject,
   canAccessTrade,
   canEditTrade,
@@ -56,7 +55,6 @@ export default async function TradeDetailPage({
   const assignee = data.users.find((u) => u.id === trade.assigneeUserId);
   const procs = data.procurements.filter((p) => p.tradeId === tradeId);
   const shortage = procs.filter((p) => p.status === "shortage").length;
-  const leads = assignableUsers(data);
 
   return (
     <div className="page">
@@ -162,14 +160,7 @@ export default async function TradeDetailPage({
               </CreatePartnerForm>
             </>
           )}
-          <AssignLeadForm
-            tradeId={trade.id}
-            assigneeUserId={trade.assigneeUserId}
-            leads={leads.map((person) => ({
-              id: person.id,
-              label: formatLeadLabel(person),
-            }))}
-          />
+          <AssignLeadForm tradeId={trade.id} />
 
           <h2 className="section-title">編輯排程</h2>
           <form action={updateTradeScheduleAction}>

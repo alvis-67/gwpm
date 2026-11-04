@@ -59,6 +59,7 @@ export async function createPartnerAction(formData: FormData) {
       companyName,
       phoneE164,
       roleDefault: "trade_lead",
+      accountStatus: "approved",
       passwordHash,
       createdAt: new Date().toISOString(),
     });

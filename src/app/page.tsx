@@ -17,8 +17,11 @@ export default async function HomePage() {
         <Link href="/login" className="btn btn-primary btn-block">
           登入
         </Link>
+        <Link href="/register" className="btn btn-secondary btn-block mt-3">
+          註冊
+        </Link>
         <p className="secondary text-sm mt-6 mb-0">
-          登入只認本系統帳號，不認在 Supabase Authentication 建立的用戶。公開註冊已關閉，由系統管理員建立工程公司老闆和項目成員。
+          沒有帳號可以註冊，經系統管理員核准後才能登入。登入只認本系統帳號，不認在 Supabase Authentication 建立的用戶。
         </p>
       </div>
     </main>

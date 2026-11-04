@@ -29,8 +29,21 @@ create table if not exists users (
   phone_e164 text not null default '',
   role_default text not null check (role_default in ('admin', 'owner', 'trade_lead')),
   password_hash text not null,
+  account_status text not null default 'approved' check (account_status in ('pending', 'approved', 'rejected')),
   created_at timestamptz not null default now()
 );
+
+alter table users add column if not exists account_status text not null default 'approved';
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'users_account_status_check'
+  ) then
+    alter table users add constraint users_account_status_check
+      check (account_status in ('pending', 'approved', 'rejected'));
+  end if;
+end $$;
 
 create index if not exists users_org_id_idx on users(org_id);
 
@@ -180,6 +193,7 @@ begin
         'phoneE164', u.phone_e164,
         'roleDefault', u.role_default,
         'passwordHash', u.password_hash,
+        'accountStatus', u.account_status,
         'createdAt', u.created_at
       ) order by u.id)
       from users u
@@ -329,6 +343,22 @@ begin
   alter table users add constraint users_role_default_check
     check (role_default in ('admin', 'owner', 'trade_lead'));
 
+  alter table users add column if not exists account_status text not null default 'approved';
+  for r in
+    select con.conname
+    from pg_constraint con
+    join pg_class rel on rel.oid = con.conrelid
+    join pg_namespace nsp on nsp.oid = rel.relnamespace
+    where nsp.nspname = 'public'
+      and rel.relname = 'users'
+      and con.contype = 'c'
+      and pg_get_constraintdef(con.oid) ilike '%account_status%'
+  loop
+    execute format('alter table users drop constraint %I', r.conname);
+  end loop;
+  alter table users add constraint users_account_status_check
+    check (account_status in ('pending', 'approved', 'rejected'));
+
   -- Supabase loads pg-safeupdate for PostgREST. It rejects DELETE when
   -- jointree->quals is null ("DELETE requires a WHERE clause"). WHERE true
   -- is a real quals node, so the check passes and every row is still removed.
@@ -349,7 +379,7 @@ begin
     as x(id text, name text, "createdAt" timestamptz);
 
   insert into users (
-    id, org_id, email, name, company_name, phone_e164, role_default, password_hash, created_at
+    id, org_id, email, name, company_name, phone_e164, role_default, password_hash, account_status, created_at
   )
   select
     id,
@@ -360,6 +390,7 @@ begin
     coalesce("phoneE164", ''),
     "roleDefault",
     "passwordHash",
+    coalesce("accountStatus", 'approved'),
     coalesce("createdAt", now())
   from jsonb_to_recordset(coalesce(payload->'users', '[]'::jsonb))
     as x(
@@ -371,6 +402,7 @@ begin
       "phoneE164" text,
       "roleDefault" text,
       "passwordHash" text,
+      "accountStatus" text,
       "createdAt" timestamptz
     );
 

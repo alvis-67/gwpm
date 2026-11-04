@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { setAccountStatusAction } from "@/actions/accounts";
+import { accountStatusOf } from "@/lib/account-status";
 import { isAdmin, requireSession } from "@/lib/auth";
 import { ADMIN_EMAIL } from "@/lib/admin-account";
 import { roleLabel } from "@/lib/labels";
 import { getOrganization } from "@/lib/permissions";
 import { readData } from "@/lib/store";
+import { SubmitButton } from "@/components/SubmitButton";
 import { DeleteAccountButton } from "./delete-button";
 
 export default async function AccountsPage() {
@@ -32,24 +35,41 @@ export default async function AccountsPage() {
         </Link>
       </header>
       <p className="secondary text-sm mb-4">
-        系統管理員建立登入。公開註冊已關閉。老闆只看本公司，項目成員只看自己參與的工程。
+        新註冊要等系統管理員核准後才能登入。老闆只看本公司，項目成員只看自己參與的工程。
       </p>
       <div className="list">
         {people.map((account) => {
           const org = getOrganization(data, account.orgId);
           const locked =
             account.id === user.id || account.email.toLowerCase() === ADMIN_EMAIL;
+          const status = accountStatusOf(account);
           return (
             <div key={account.id} className="list-row">
               <div className="list-row-main">
                 <h2 className="list-row-title">{account.name}</h2>
                 <div className="list-row-meta">
                   <span>{roleLabel[account.roleDefault]}</span>
+                  {status === "pending" ? <span>待核准</span> : null}
+                  {status === "rejected" ? <span>已拒絕</span> : null}
                   <span>{account.email}</span>
                   <span>{org?.name || account.companyName || "未分公司"}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {locked || status === "approved" ? null : (
+                  <form action={setAccountStatusAction}>
+                    <input type="hidden" name="userId" value={account.id} />
+                    <input type="hidden" name="accountStatus" value="approved" />
+                    <SubmitButton label="核准" className="btn btn-primary" />
+                  </form>
+                )}
+                {locked || status !== "pending" ? null : (
+                  <form action={setAccountStatusAction}>
+                    <input type="hidden" name="userId" value={account.id} />
+                    <input type="hidden" name="accountStatus" value="rejected" />
+                    <SubmitButton label="拒絕" className="btn btn-secondary" />
+                  </form>
+                )}
                 <Link href={`/accounts/${account.id}/edit`} className="btn btn-secondary">
                   編輯
                 </Link>

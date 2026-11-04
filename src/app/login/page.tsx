@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { loginAction } from "@/actions/auth";
 import { APP_VERSION_LABEL } from "@/lib/version";
@@ -40,6 +41,9 @@ export default function LoginPage() {
               {pending ? "登入中…" : "登入"}
             </button>
           </form>
+          <Link href="/register" className="switch">
+            註冊
+          </Link>
         </div>
       </section>
     </main>

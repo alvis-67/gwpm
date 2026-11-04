@@ -1,3 +1,4 @@
+import { accountStatusOf } from "./account-status";
 import { isAdmin, type SessionUser } from "./auth";
 import { joinProjectNotes, splitProjectNotes } from "./project-docs";
 import type { AppData, Project, ProjectTrade, User } from "./types";
@@ -168,15 +169,44 @@ export function rememberProjectAssignee(data: AppData, project: Project, userId:
   });
 }
 
-/** Anyone who can log in as a company boss or a trade 負責人, in any company. */
+/** Approved company bosses and trade 負責人. Pending and rejected accounts are not assignable. */
 export function assignableUsers(data: AppData): User[] {
   return data.users
-    .filter((user) => user.roleDefault === "owner" || user.roleDefault === "trade_lead")
+    .filter(
+      (user) =>
+        (user.roleDefault === "owner" || user.roleDefault === "trade_lead") &&
+        accountStatusOf(user) === "approved",
+    )
     .sort((a, b) => {
       const company = a.companyName.localeCompare(b.companyName, "zh-Hant");
       if (company !== 0) return company;
       return a.name.localeCompare(b.name, "zh-Hant");
     });
+}
+
+function phoneDigits(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+/** One approved owner or trade_lead, matched by exact email or exact phone. */
+export function findApprovedAccount(data: AppData, query: string): User | null {
+  const raw = query.trim();
+  if (!raw) return null;
+  const pool = assignableUsers(data);
+  let matches: User[];
+  if (raw.includes("@")) {
+    const email = raw.toLowerCase();
+    matches = pool.filter((user) => user.email.toLowerCase() === email);
+  } else {
+    const digits = phoneDigits(raw);
+    if (!digits) return null;
+    matches = pool.filter((user) => {
+      const phone = user.phoneE164.trim();
+      if (!phone) return false;
+      return phone === raw || phoneDigits(phone) === digits;
+    });
+  }
+  return matches.length === 1 ? matches[0] : null;
 }
 
 export function getOrganization(data: AppData, orgId: string) {

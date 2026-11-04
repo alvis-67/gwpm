@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { accountStatusOf } from "@/lib/account-status";
 import { canManageProjects, isAdmin, requireSession } from "@/lib/auth";
 import { formatLeadLabel } from "@/lib/format";
 import { readData } from "@/lib/store";
@@ -15,7 +16,12 @@ export default async function PartnersPage({
   const admin = isAdmin(user);
   const data = await readData();
   const leads = data.users
-    .filter((u) => u.roleDefault === "trade_lead" && (admin || u.orgId === user.orgId))
+    .filter(
+      (u) =>
+        u.roleDefault === "trade_lead" &&
+        accountStatusOf(u) === "approved" &&
+        (admin || u.orgId === user.orgId),
+    )
     .sort((a, b) =>
       (a.companyName || a.name).localeCompare(b.companyName || b.name, "zh-Hant"),
     );

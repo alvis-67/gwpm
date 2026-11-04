@@ -161,6 +161,22 @@
   opacity: 0.72;
 }
 
+.gpms-login .switch {
+  display: block;
+  margin-top: 1.25rem;
+  text-align: center;
+  color: var(--brand);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+}
+
+.gpms-login .hint {
+  margin: 2rem 0 0;
+  line-height: 1.6;
+}
+
 @media (max-width: 860px) {
   .gpms-login {
     grid-template-columns: 1fr;

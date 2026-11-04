@@ -3,6 +3,7 @@
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { accountStatusOf, encodeAccountPassword } from "@/lib/account-status";
 import { createSession, destroySession, requireSession } from "@/lib/auth";
 import { updateData } from "@/lib/store";
 
@@ -34,7 +35,9 @@ export async function changePasswordAction(formData: FormData) {
   await updateData(async (data) => {
     const user = data.users.find((item) => item.id === session.id);
     if (!user) throw new Error("找不到使用者");
-    user.passwordHash = await hash(next, 10);
+    const status = accountStatusOf(user);
+    user.accountStatus = status;
+    user.passwordHash = encodeAccountPassword(await hash(next, 10), status);
   });
 
   revalidatePath("/me");

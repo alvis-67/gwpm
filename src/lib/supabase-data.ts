@@ -2,6 +2,7 @@ import {
   PROCUREMENT_STATUSES,
   PROJECT_STATUSES,
   TRADE_STATUSES,
+  type AccountStatus,
   type AppData,
   type Notification,
   type NotificationType,
@@ -16,6 +17,7 @@ import {
   type WorkLog,
   type WorkLogPhoto,
 } from "./types";
+import { accountStatusOf, encodeAccountPassword, statusFromPasswordHash } from "./account-status";
 import { ADMIN_EMAIL } from "./admin-account";
 
 /** Keys `gwpm_replace_data` / `gwpm_load_data` exchange. Camel case matches AppData. */
@@ -104,9 +106,20 @@ function mapOrganization(row: Record<string, unknown>): Organization {
   };
 }
 
+function mapAccountStatus(value: unknown): AccountStatus | null {
+  if (value === "pending" || value === "approved" || value === "rejected") return value;
+  return null;
+}
+
 function mapUser(row: Record<string, unknown>): User {
   const email = asString(row.email);
   const stored = oneOf(row.roleDefault, ROLES, "roleDefault");
+  const storedHash = asString(row.passwordHash);
+  const fromHash = statusFromPasswordHash(storedHash);
+  const fromColumn = mapAccountStatus(row.accountStatus);
+  // A prefixed hash is what the current database function actually stores.
+  // A later account_status column must not turn a pending login into an approved one.
+  const accountStatus = fromHash !== "approved" ? fromHash : (fromColumn ?? "approved");
   return {
     id: asString(row.id),
     orgId: asString(row.orgId),
@@ -115,7 +128,8 @@ function mapUser(row: Record<string, unknown>): User {
     companyName: asString(row.companyName),
     phoneE164: asString(row.phoneE164),
     roleDefault: email.toLowerCase() === ADMIN_EMAIL ? "admin" : stored,
-    passwordHash: asString(row.passwordHash),
+    passwordHash: encodeAccountPassword(storedHash, accountStatus),
+    accountStatus,
     createdAt: asString(row.createdAt),
   };
 }
@@ -228,9 +242,15 @@ export function toSupabasePayload(data: AppData): SupabasePayload {
     // Databases created before the admin role reject role "admin" until
     // schema.sql is applied. Keep that account as owner in the column and
     // promote it by email on read, so a save cannot fail the check.
-    users: data.users.map((user) =>
-      user.roleDefault === "admin" ? { ...user, roleDefault: "owner" as const } : user,
-    ),
+    users: data.users.map((user) => {
+      const accountStatus = accountStatusOf(user);
+      return {
+        ...user,
+        accountStatus,
+        passwordHash: encodeAccountPassword(user.passwordHash, accountStatus),
+        roleDefault: user.roleDefault === "admin" ? ("owner" as const) : user.roleDefault,
+      };
+    }),
     projects: data.projects,
     trades: data.trades,
     dependencies: data.dependencies,

@@ -1,48 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { assignTradeAction } from "@/actions/projects";
 import { SubmitButton } from "@/components/SubmitButton";
 
-export function AssignLeadForm({
-  tradeId,
-  assigneeUserId,
-  leads,
-}: {
-  tradeId: string;
-  assigneeUserId: string | null;
-  leads: { id: string; label: string }[];
-}) {
-  const saved = assigneeUserId || "";
-  const [value, setValue] = useState(saved);
-  const [fromServer, setFromServer] = useState(saved);
-  if (saved !== fromServer) {
-    setFromServer(saved);
-    setValue(saved);
-  }
+export function AssignLeadForm({ tradeId }: { tradeId: string }) {
+  const [query, setQuery] = useState("");
+  const [state, action] = useActionState(assignTradeAction, null);
+  const shown = state?.matchLabel && state.query === query.trim() ? state.matchLabel : null;
 
   return (
-    <form action={assignTradeAction} className="mb-4">
+    <form action={action} className="mb-4">
       <input type="hidden" name="tradeId" value={tradeId} />
-      <input type="hidden" name="assigneeUserId" value={value} />
       <div className="field">
-        <label htmlFor="assigneeUserId">工程公司｜負責人</label>
-        {/* This select is not owned by the action form, so form.reset() cannot snap it back to 未指派. */}
-        <select
-          id="assigneeUserId"
-          form="gwpm-assignee-display"
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-        >
-          <option value="">未指派</option>
-          {leads.map((lead) => (
-            <option key={lead.id} value={lead.id}>
-              {lead.label}
-            </option>
-          ))}
-        </select>
+        <label htmlFor="assigneeQuery">電郵或電話</label>
+        <input
+          id="assigneeQuery"
+          name="query"
+          value={query}
+          autoComplete="off"
+          onChange={(event) => setQuery(event.target.value)}
+        />
       </div>
-      <SubmitButton label="儲存指派" className="btn btn-secondary" />
+      {state?.error ? (
+        <p className="text-sm mb-3" style={{ color: "var(--color-danger)" }}>
+          {state.error}
+        </p>
+      ) : null}
+      {shown ? <p className="mb-3">負責人：{shown}</p> : null}
+      <div className="flex gap-2">
+        <SubmitButton label="查詢" className="btn btn-secondary" />
+        {shown ? (
+          <SubmitButton name="intent" value="save" label="儲存指派" className="btn btn-primary" />
+        ) : null}
+      </div>
     </form>
   );
 }

@@ -156,6 +156,23 @@ assert.equal(
 );
 assert.equal(adminLoaded.data.users.find((user) => user.email === "owner@demo.local")?.roleDefault, "owner");
 
+const pending = structuredClone(sample);
+pending.users[0].accountStatus = "pending";
+const pendingPayload = toSupabasePayload(pending);
+assert.equal(pendingPayload.users[0].accountStatus, "pending");
+assert.ok(pendingPayload.users[0].passwordHash.startsWith("gwpm-status:pending:"));
+const oldSqlPayload = {
+  ...pendingPayload,
+  users: pendingPayload.users.map((user) => {
+    const copy = { ...user };
+    delete copy.accountStatus;
+    return copy;
+  }),
+};
+const pendingLoaded = fromSupabasePayload({ revision: 5, ...oldSqlPayload });
+assert.equal(pendingLoaded.data.users[0].accountStatus, "pending");
+assert.equal(pendingLoaded.data.users[0].roleDefault, "owner");
+
 assert.equal(persistenceLabel("local"), "本地 JSON（未連接 Supabase）");
 assert.equal(persistenceLabel("blob"), "Vercel Blob（可寫）");
 assert.equal(persistenceLabel("supabase"), "Supabase（多租戶）");

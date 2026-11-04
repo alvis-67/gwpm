@@ -3,6 +3,7 @@ import { compare } from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { accountStatusOf, passwordHashForCompare } from "./account-status";
 import type { Role, User } from "./types";
 import { readData } from "./store";
 
@@ -87,7 +88,8 @@ export async function getSession(): Promise<SessionUser | null> {
     if (
       !user ||
       user.roleDefault !== payload.roleDefault ||
-      passwordStamp(user.passwordHash) !== stamp
+      passwordStamp(user.passwordHash) !== stamp ||
+      accountStatusOf(user) !== "approved"
     ) {
       return null;
     }
@@ -120,8 +122,11 @@ export async function loginWithPassword(
     (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
   );
   if (!user) return { ok: false, error: "電郵或密碼不正確" };
-  const match = await compare(password, user.passwordHash);
+  const match = await compare(password, passwordHashForCompare(user.passwordHash));
   if (!match) return { ok: false, error: "電郵或密碼不正確" };
+  const status = accountStatusOf(user);
+  if (status === "pending") return { ok: false, error: "帳號尚未由管理員核准" };
+  if (status === "rejected") return { ok: false, error: "帳號未獲核准" };
   await createSession(user);
   return { ok: true, user };
 }

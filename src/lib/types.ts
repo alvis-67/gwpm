@@ -1,5 +1,8 @@
 export type Role = "admin" | "owner" | "trade_lead";
 
+/** Missing on older rows means approved. Pending and rejected cannot log in or be assigned. */
+export type AccountStatus = "pending" | "approved" | "rejected";
+
 export type ProjectStatus = "planning" | "active" | "completed" | "archived";
 
 export type TradeStatus =
@@ -38,6 +41,7 @@ export interface User {
   phoneE164: string;
   roleDefault: Role;
   passwordHash: string;
+  accountStatus?: AccountStatus;
   createdAt: string;
 }
 

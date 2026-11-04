@@ -5,14 +5,16 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { isAdmin, requireSession } from "@/lib/auth";
 import { createId } from "@/lib/ids";
+import { formatLeadLabel } from "@/lib/format";
 import {
   assignableUsers,
   canLeadProject,
+  findApprovedAccount,
   managedProject,
   rememberProjectAssignee,
 } from "@/lib/permissions";
 import { deleteStoredUploads } from "@/lib/uploads";
-import { updateData } from "@/lib/store";
+import { readData, updateData } from "@/lib/store";
 import { joinProjectNotes, splitProjectNotes } from "@/lib/project-docs";
 import { DEFAULT_TRADE_TEMPLATES, type ProjectStatus } from "@/lib/types";
 import { pushNotification } from "@/lib/notifications";
@@ -233,39 +235,57 @@ export async function deleteTradeAction(formData: FormData) {
   await redirectUnlessHere(`/projects/${projectId}`);
 }
 
-export async function assignTradeAction(formData: FormData) {
+export type AssignTradeState = { error?: string; matchLabel?: string; query?: string } | null;
+
+export async function assignTradeAction(
+  _prev: AssignTradeState,
+  formData: FormData,
+): Promise<AssignTradeState> {
   const user = await requireSession();
   const tradeId = String(formData.get("tradeId") || "");
-  const assigneeUserId = String(formData.get("assigneeUserId") || "") || null;
+  const query = String(formData.get("query") || "").trim();
+  const save = String(formData.get("intent") || "") === "save";
 
-  await updateData((data) => {
-    const trade = data.trades.find((t) => t.id === tradeId);
-    if (!trade) throw new Error("找不到工種");
-    const project = managedProject(data, user, trade.projectId);
-    if (!project) throw new Error("無權限");
-    if (
-      assigneeUserId &&
-      !assignableUsers(data).some((candidate) => candidate.id === assigneeUserId)
-    ) {
-      throw new Error("請選擇負責人");
-    }
-    rememberProjectAssignee(data, project, assigneeUserId || trade.assigneeUserId);
-    trade.assigneeUserId = assigneeUserId;
-    if (assigneeUserId) {
-      pushNotification(data, {
-        userId: assigneeUserId,
+  const data = await readData();
+  const trade = data.trades.find((item) => item.id === tradeId);
+  if (!trade) return { error: "找不到工種" };
+  const project = managedProject(data, user, trade.projectId);
+  if (!project) return { error: "無權限" };
+  const match = findApprovedAccount(data, query);
+  if (!match) return { error: "找不到此帳號" };
+  const matchLabel = formatLeadLabel(match);
+  if (!save) return { matchLabel, query };
+
+  try {
+    await updateData((next) => {
+      const nextTrade = next.trades.find((item) => item.id === tradeId);
+      const nextProject = nextTrade && managedProject(next, user, nextTrade.projectId);
+      if (!nextTrade || !nextProject) throw new Error("無權限");
+      const again = findApprovedAccount(next, query);
+      if (!again) throw new Error("找不到此帳號");
+      rememberProjectAssignee(next, nextProject, again.id);
+      nextTrade.assigneeUserId = again.id;
+      pushNotification(next, {
+        userId: again.id,
         type: "assigned",
         title: "您已被指派工種",
-        body: `${project.name}｜${trade.name}`,
+        body: `${nextProject.name}｜${nextTrade.name}`,
         entityType: "trade",
-        entityId: trade.id,
-        href: `/projects/${trade.projectId}/trades/${trade.id}`,
+        entityId: nextTrade.id,
+        href: `/projects/${nextTrade.projectId}/trades/${nextTrade.id}`,
       });
-    }
-  });
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "找不到此帳號";
+    if (message === "找不到此帳號" || message === "無權限") return { error: message };
+    throw error;
+  }
 
   revalidatePath("/projects");
+  revalidatePath(`/projects/${trade.projectId}`);
+  revalidatePath(`/projects/${trade.projectId}/trades/${tradeId}`);
   revalidatePath("/notifications");
+  return { matchLabel, query };
 }
 
 export async function updateTradeScheduleAction(formData: FormData) {

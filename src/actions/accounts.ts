@@ -3,6 +3,7 @@
 import { hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { applyAccountStatus } from "@/lib/account-status";
 import { isAdmin, requireSession } from "@/lib/auth";
 import { ADMIN_EMAIL } from "@/lib/admin-account";
 import { createId } from "@/lib/ids";
@@ -76,6 +77,7 @@ export async function createOrgAccountAction(
         phoneE164,
         roleDefault: role,
         passwordHash: await hash(password, 10),
+        accountStatus: "approved",
         createdAt: new Date().toISOString(),
       });
       const project = data.projects.find((item) => item.id === projectId);
@@ -187,6 +189,23 @@ export async function updateAccountAction(
 
   revalidatePath("/accounts");
   redirect("/accounts");
+}
+
+export async function setAccountStatusAction(formData: FormData) {
+  const session = await requireSession();
+  if (!isAdmin(session)) throw new Error("無權限");
+  const userId = String(formData.get("userId") || "");
+  const status = String(formData.get("accountStatus") || "");
+  if (status !== "approved" && status !== "rejected") throw new Error("無權限");
+
+  await updateData((data) => {
+    const user = data.users.find((item) => item.id === userId);
+    if (!user) throw new Error("找不到帳號");
+    if (isLockedAccount(user, session.id)) throw new Error("不能更改系統管理員帳號");
+    applyAccountStatus(user, status);
+  });
+
+  revalidatePath("/accounts");
 }
 
 export async function deleteAccountAction(formData: FormData) {
