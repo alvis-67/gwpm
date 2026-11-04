@@ -166,6 +166,7 @@ export function rememberProjectAssignee(data: AppData, project: Project, userId:
     leadUserId: docs.leadUserId,
     comments: docs.comments,
     assigneeIds: [...ids],
+    customerPayment: docs.customerPayment,
   });
 }
 

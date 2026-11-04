@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { addProjectCommentAction, addTradeAction, deleteProjectAction } from "@/actions/projects";
+import {
+  addProjectCommentAction,
+  addTradeAction,
+  deleteProjectAction,
+  saveCustomerPaymentAction,
+  saveTradeAmountAction,
+} from "@/actions/projects";
 import { ConfirmTwiceButton } from "@/components/ConfirmTwiceButton";
 import { DependencyBanner } from "@/components/DependencyBanner";
 import { ProgressItem } from "@/components/ProgressItem";
@@ -18,6 +24,7 @@ import {
   visibleTradesForProject,
 } from "@/lib/permissions";
 import { tradeNameOptions } from "@/lib/trade-names";
+import { formatAmount, splitTradeNotes, summarizeTradeAmounts } from "@/lib/money";
 import { customerPath, splitProjectNotes } from "@/lib/project-docs";
 import { readData } from "@/lib/store";
 import { tradeStatusLabel } from "@/lib/labels";
@@ -41,6 +48,13 @@ export default async function ProjectOverviewPage({
   );
   const docs = splitProjectNotes(project.notes);
   const trades = visibleTradesForProject(data, user, id);
+  const money = leader
+    ? summarizeTradeAmounts(
+        data.trades.filter((trade) => trade.projectId === id).map((trade) => trade.notes),
+      )
+    : null;
+  const tradeTotal = money?.tradeTotal ?? null;
+  const remainder = money ? money.remainder(docs.customerPayment) : null;
   const blocked = leader ? projectBlockedTrades(data, id) : [];
   const completed = trades.filter((t) => t.status === "completed").length;
   const progress = trades.length ? Math.round((completed / trades.length) * 100) : 0;
@@ -106,6 +120,37 @@ export default async function ProjectOverviewPage({
         </section>
       )}
 
+      {leader && (
+        <section>
+          <h2 className="section-title">客人付款</h2>
+          <form action={saveCustomerPaymentAction} className="mb-3">
+            <input type="hidden" name="projectId" value={id} />
+            <div className="field">
+              <label htmlFor="customerPayment">客人付款</label>
+              <input
+                id="customerPayment"
+                name="customerPayment"
+                inputMode="decimal"
+                className="font-mono"
+                defaultValue={docs.customerPayment ?? ""}
+              />
+            </div>
+            <SubmitButton label="儲存" className="btn btn-secondary" />
+          </form>
+          <div className="list" style={{ padding: "var(--space-3) var(--page-padding-x)" }}>
+            <p className="mb-1">
+              客人付款：<span className="font-mono">{formatAmount(docs.customerPayment)}</span>
+            </p>
+            <p className="mb-1">
+              金額合計：<span className="font-mono">{formatAmount(tradeTotal)}</span>
+            </p>
+            <p className="mb-0">
+              餘額：<span className="font-mono">{formatAmount(remainder)}</span>
+            </p>
+          </div>
+        </section>
+      )}
+
       <h2 className="section-title">工程進度</h2>
       <p className="secondary text-sm mb-2">
         完成 {completed}/{trades.length}（{progress}%）
@@ -117,18 +162,40 @@ export default async function ProjectOverviewPage({
         {trades.map((trade) => {
           const assignee = data.users.find((u) => u.id === trade.assigneeUserId);
           const hint = evaluateDependency(data, trade);
+          const amount = leader ? splitTradeNotes(trade.notes).amount : null;
           return (
-            <ProgressItem
-              key={trade.id}
-              href={`/projects/${id}/trades/${trade.id}`}
-              title={trade.name}
-              status={trade.status}
-              assignee={assignee ? formatLeadLabel(assignee) : "未指派"}
-              date={formatDateZh(trade.plannedStart)}
-              blocked={hint.kind === "blocked"}
-              tradeId={trade.id}
-              canRemove={leader}
-            />
+            <div key={trade.id}>
+              <ProgressItem
+                href={`/projects/${id}/trades/${trade.id}`}
+                title={trade.name}
+                status={trade.status}
+                assignee={assignee ? formatLeadLabel(assignee) : "未指派"}
+                date={formatDateZh(trade.plannedStart)}
+                blocked={hint.kind === "blocked"}
+                tradeId={trade.id}
+                canRemove={leader}
+              />
+              {leader && (
+                <form
+                  action={saveTradeAmountAction}
+                  className="mb-3"
+                  style={{ padding: "0 var(--page-padding-x) var(--space-3)" }}
+                >
+                  <input type="hidden" name="tradeId" value={trade.id} />
+                  <div className="field">
+                    <label htmlFor={`amount-${trade.id}`}>金額</label>
+                    <input
+                      id={`amount-${trade.id}`}
+                      name="amount"
+                      inputMode="decimal"
+                      className="font-mono"
+                      defaultValue={amount ?? ""}
+                    />
+                  </div>
+                  <SubmitButton label="儲存" className="btn btn-secondary" />
+                </form>
+              )}
+            </div>
           );
         })}
       </div>

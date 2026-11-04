@@ -14,6 +14,7 @@ import { TradeStatusControl } from "@/components/TradeStatusControl";
 import { ProcurementStatusChip } from "@/components/StatusChip";
 import { canManageProjects, requireSession } from "@/lib/auth";
 import { formatDateZh } from "@/lib/dates";
+import { splitTradeNotes } from "@/lib/money";
 import { evaluateDependency } from "@/lib/dependencies";
 import { formatLeadLabel } from "@/lib/format";
 import {
@@ -53,6 +54,7 @@ export default async function TradeDetailPage({
   const canEdit = canEditTrade(data, user, trade);
   const hint = evaluateDependency(data, trade);
   const assignee = data.users.find((u) => u.id === trade.assigneeUserId);
+  const noteText = splitTradeNotes(trade.notes).text;
   const procs = data.procurements.filter((p) => p.tradeId === tradeId);
   const shortage = procs.filter((p) => p.status === "shortage").length;
 
@@ -69,6 +71,11 @@ export default async function TradeDetailPage({
           </p>
         </div>
       </header>
+
+      <div className="link-row">
+        <Link href={`/projects/${id}/trades/${tradeId}/logs`}>日誌與相片</Link>
+        <Link href={`/projects/${id}/procurement`}>相關採購</Link>
+      </div>
 
       <TradeStatusControl tradeId={trade.id} status={trade.status} canEdit={canEdit} />
 
@@ -104,7 +111,7 @@ export default async function TradeDetailPage({
         <p className="mb-0">
           實際完工：<span className="font-mono">{formatDateZh(trade.actualEnd)}</span>
         </p>
-        {trade.notes && <p className="mt-2 secondary text-sm">{trade.notes}</p>}
+        {noteText && <p className="mt-2 secondary text-sm">{noteText}</p>}
       </div>
 
       {leader && (
@@ -187,7 +194,7 @@ export default async function TradeDetailPage({
             </div>
             <div className="field">
               <label htmlFor="notes">備註</label>
-              <textarea id="notes" name="notes" defaultValue={trade.notes} />
+              <textarea id="notes" name="notes" defaultValue={noteText} />
             </div>
             <SubmitButton label="儲存排程" className="btn btn-primary" />
           </form>
@@ -204,11 +211,6 @@ export default async function TradeDetailPage({
           <span>{p.name}</span>
         </div>
       ))}
-
-      <div className="link-row">
-        <Link href={`/projects/${id}/trades/${tradeId}/logs`}>日誌與相片</Link>
-        <Link href={`/projects/${id}/procurement`}>相關採購</Link>
-      </div>
 
       {leader && (
         <div className="mt-8">

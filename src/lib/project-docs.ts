@@ -15,10 +15,25 @@ export interface ProjectDocs {
   /** People who can be chosen as 負責人 on this project only. */
   assigneeIds: string[];
   comments: ProjectComment[];
+  /** What the customer pays for the whole job. Null means not entered. */
+  customerPayment: number | null;
 }
 
 function emptyDocs(text: string): ProjectDocs {
-  return { text, quotationNumber: "", invoiceNumber: "", leadUserId: "", assigneeIds: [], comments: [] };
+  return {
+    text,
+    quotationNumber: "",
+    invoiceNumber: "",
+    leadUserId: "",
+    assigneeIds: [],
+    comments: [],
+    customerPayment: null,
+  };
+}
+
+function readStoredAmount(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return null;
+  return Math.round(value * 100) / 100;
 }
 
 function readIds(value: unknown): string[] {
@@ -58,6 +73,7 @@ export function splitProjectNotes(notes: string): ProjectDocs {
       leadUserId?: unknown;
       assigneeIds?: unknown;
       comments?: unknown;
+      customerPayment?: unknown;
     };
     return {
       text,
@@ -66,6 +82,7 @@ export function splitProjectNotes(notes: string): ProjectDocs {
       leadUserId: typeof parsed.leadUserId === "string" ? parsed.leadUserId : "",
       assigneeIds: readIds(parsed.assigneeIds),
       comments: readComments(parsed.comments),
+      customerPayment: readStoredAmount(parsed.customerPayment),
     };
   } catch {
     return emptyDocs(notes);
@@ -76,15 +93,29 @@ export function joinProjectNotes(
   text: string,
   quotationNumber: string,
   invoiceNumber: string,
-  extra?: { leadUserId?: string; assigneeIds?: string[]; comments?: ProjectComment[] },
+  extra?: {
+    leadUserId?: string;
+    assigneeIds?: string[];
+    comments?: ProjectComment[];
+    customerPayment?: number | null;
+  },
 ): string {
   const quotation = quotationNumber.trim();
   const invoice = invoiceNumber.trim();
   const leadUserId = extra?.leadUserId?.trim() || "";
   const assigneeIds = readIds(extra?.assigneeIds);
   const comments = extra?.comments ?? [];
+  const customerPayment =
+    extra?.customerPayment == null ? null : readStoredAmount(extra.customerPayment);
   const body = text.replace(/\s+$/, "");
-  if (!quotation && !invoice && !leadUserId && assigneeIds.length === 0 && comments.length === 0) {
+  if (
+    !quotation &&
+    !invoice &&
+    !leadUserId &&
+    assigneeIds.length === 0 &&
+    comments.length === 0 &&
+    customerPayment == null
+  ) {
     return body;
   }
   const payload: Record<string, unknown> = {
@@ -94,6 +125,7 @@ export function joinProjectNotes(
   if (leadUserId) payload.leadUserId = leadUserId;
   if (assigneeIds.length > 0) payload.assigneeIds = assigneeIds;
   if (comments.length > 0) payload.comments = comments;
+  if (customerPayment != null) payload.customerPayment = customerPayment;
   return `${body}${body ? "\n\n" : ""}${MARK}${JSON.stringify(payload)}`;
 }
 

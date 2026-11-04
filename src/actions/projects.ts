@@ -15,6 +15,7 @@ import {
 } from "@/lib/permissions";
 import { deleteStoredUploads } from "@/lib/uploads";
 import { readData, updateData } from "@/lib/store";
+import { joinTradeNotes, parseAmount, splitTradeNotes } from "@/lib/money";
 import { joinProjectNotes, splitProjectNotes } from "@/lib/project-docs";
 import { DEFAULT_TRADE_TEMPLATES, type ProjectStatus } from "@/lib/types";
 import { pushNotification } from "@/lib/notifications";
@@ -142,6 +143,7 @@ export async function updateProjectAction(formData: FormData) {
       leadUserId: kept.leadUserId,
       assigneeIds: kept.assigneeIds,
       comments: kept.comments,
+      customerPayment: kept.customerPayment,
     });
     p.status = status;
     p.updatedAt = new Date().toISOString();
@@ -298,7 +300,9 @@ export async function updateTradeScheduleAction(formData: FormData) {
     if (!project) throw new Error("無權限");
     trade.plannedStart = String(formData.get("plannedStart") || "");
     trade.plannedEnd = String(formData.get("plannedEnd") || "");
-    trade.notes = String(formData.get("notes") || trade.notes);
+    const keptNotes = splitTradeNotes(trade.notes);
+    const submitted = String(formData.get("notes") || "");
+    trade.notes = joinTradeNotes(submitted || keptNotes.text, keptNotes.amount);
   });
   revalidatePath("/projects");
   revalidatePath("/today");
@@ -383,6 +387,7 @@ export async function setProjectLeadAction(formData: FormData) {
       leadUserId,
       assigneeIds: kept.assigneeIds,
       comments: kept.comments,
+      customerPayment: kept.customerPayment,
     });
     project.updatedAt = new Date().toISOString();
   });
@@ -414,9 +419,51 @@ export async function addProjectCommentAction(formData: FormData) {
           createdAt: new Date().toISOString(),
         },
       ],
+      customerPayment: kept.customerPayment,
     });
     project.updatedAt = new Date().toISOString();
   });
 
   revalidatePath(`/projects/${projectId}`);
+}
+
+export async function saveCustomerPaymentAction(formData: FormData) {
+  const user = await requireSession();
+  const projectId = String(formData.get("projectId") || "");
+  const customerPayment = parseAmount(formData.get("customerPayment"));
+
+  await updateData((data) => {
+    const project = managedProject(data, user, projectId);
+    if (!project) throw new Error("無權限");
+    const kept = splitProjectNotes(project.notes);
+    project.notes = joinProjectNotes(kept.text, kept.quotationNumber, kept.invoiceNumber, {
+      leadUserId: kept.leadUserId,
+      assigneeIds: kept.assigneeIds,
+      comments: kept.comments,
+      customerPayment,
+    });
+    project.updatedAt = new Date().toISOString();
+  });
+
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function saveTradeAmountAction(formData: FormData) {
+  const user = await requireSession();
+  const tradeId = String(formData.get("tradeId") || "");
+  const amount = parseAmount(formData.get("amount"));
+  let projectId = "";
+
+  await updateData((data) => {
+    const trade = data.trades.find((item) => item.id === tradeId);
+    if (!trade) throw new Error("找不到工種");
+    const project = managedProject(data, user, trade.projectId);
+    if (!project) throw new Error("無權限");
+    projectId = project.id;
+    const kept = splitTradeNotes(trade.notes);
+    trade.notes = joinTradeNotes(kept.text, amount);
+  });
+
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath(`/projects/${projectId}/trades/${tradeId}`);
 }
